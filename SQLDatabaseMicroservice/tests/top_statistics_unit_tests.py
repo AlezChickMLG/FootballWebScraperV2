@@ -115,5 +115,20 @@ class TestsTopStatistics(unittest.TestCase):
         self.assertIsInstance(top_statistics, TopStatisticsObject, "A fost returnat un tip gresit de obiect")
         self.assertEqual(top_statistics, self.top_statistics, "A fost returnat obiectul gresit")
 
+    def test_delete_top_statistics(self):
+        self.helper_insert_teams_and_matches()
+
+        result = self.repository.delete_top_statistics_by_id(self.match.mid, self.match.home_team)
+        self.assertTrue(
+            result,
+            "Nu a fost efectuata stergerea cu succes a unui rand din top_statistics"
+        )
+
+        result = self.repository.get_top_statistics_by_id(self.match.mid, self.match.home_team)
+        self.assertIsNone(
+            result,
+            "A fost returnat un obiect de tip top_statistics"
+        )
+
 if __name__ == "__main__":
     unittest.main()

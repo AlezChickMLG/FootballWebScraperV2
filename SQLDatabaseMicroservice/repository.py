@@ -676,5 +676,21 @@ class Repository:
             print(f"Eroare la stergerea unui meci: {e}")
             return False
 
+    def delete_top_statistics_by_id(self, mid, team_id):
+        try:
+            self.cursor.execute('''
+                DELETE FROM TopStatistics
+                    WHERE mid = ?
+                    AND team_id = ?
+            ''', (
+                mid,
+                team_id
+            ))
+            print(f"Am sters un rand din top_statistics: mid: {mid}, team_id: {team_id}")
+            return True
+        except Exception as e:
+            print(f"Eroare la stergerea unui rand din top_statistics: {e}")
+            return False
+
 if __name__ == "__main__":
     repository = Repository()
