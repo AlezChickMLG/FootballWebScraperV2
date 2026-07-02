@@ -5,7 +5,7 @@ from football_dataclasses.teams_dataclass import Team
 from repository import Repository
 
 
-class TestsFootballDatabase(unittest.TestCase):
+class TestsMatches(unittest.TestCase):
     def setUp(self):
         self.repository = Repository(":memory:")
 
