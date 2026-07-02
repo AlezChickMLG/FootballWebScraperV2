@@ -139,7 +139,6 @@ class Repository:
                 centrari_totale INTEGER,
                 xA REAL,
                 aruncari_de_la_margine INTEGER,
-                
                 PRIMARY KEY (mid, team_id),
                 FOREIGN KEY (mid) REFERENCES Matches(mid),
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
