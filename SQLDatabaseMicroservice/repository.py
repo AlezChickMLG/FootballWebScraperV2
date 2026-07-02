@@ -128,6 +128,9 @@ class Repository:
             CREATE TABLE IF NOT EXISTS Pase (
                 mid TEXT NOT NULL,
                 team_id TEXT NOT NULL,
+                pase_procentaj INTEGER,
+                pase_reusite INTEGER,
+                pase_totale INTEGER,
                 pase_lungi_procentaj INTEGER,
                 pase_lungi_reusite INTEGER,
                 pase_lungi_totale INTEGER,
@@ -333,6 +336,9 @@ class Repository:
             self.cursor.execute("""
                                 INSERT INTO Pase (mid,
                                                   team_id,
+                                                  pase_procentaj,
+                                                  pase_reusite,
+                                                  pase_totale,
                                                   pase_lungi_procentaj,
                                                   pase_lungi_reusite,
                                                   pase_lungi_totale,
@@ -344,10 +350,13 @@ class Repository:
                                                   centrari_totale,
                                                   xA,
                                                   aruncari_de_la_margine)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                 """, (
                                     pase.mid,
                                     pase.team_id,
+                                    pase.pase_procentaj,
+                                    pase.pase_reusite,
+                                    pase.pase_totale,
                                     pase.pase_lungi_procentaj,
                                     pase.pase_lungi_reusite,
                                     pase.pase_lungi_totale,

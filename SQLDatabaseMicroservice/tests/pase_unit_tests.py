@@ -44,6 +44,9 @@ class TestsPase(unittest.TestCase):
         self.pase = PaseObject(
             mid=self.match.mid,
             team_id=self.match.home_team,
+            pase_procentaj=90,
+            pase_reusite=450,
+            pase_totale=500,
             pase_lungi_procentaj=75,
             pase_lungi_reusite=3,
             pase_lungi_totale=4,

@@ -4,6 +4,9 @@ from dataclasses import dataclass
 class PaseObject:
     mid: str
     team_id: str
+    pase_procentaj: int
+    pase_reusite: int
+    pase_totale: int
     pase_lungi_procentaj: int
     pase_lungi_reusite: int
     pase_lungi_totale: int
