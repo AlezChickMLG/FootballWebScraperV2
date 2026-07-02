@@ -1,11 +1,11 @@
 import sqlite3
 
 from src.football_repository.football_dataclasses.aparare_dataclass import AparareObject
-from src.football_repository.football_dataclasses import AtacObject
-from src.football_repository.football_dataclasses import Match
+from src.football_repository.football_dataclasses.atac_dataclass import AtacObject
+from src.football_repository.football_dataclasses.matches_dataclass import Match
 from src.football_repository.football_dataclasses.pase_dataclass import PaseObject
-from src.football_repository.football_dataclasses import PortarObject
-from src.football_repository.football_dataclasses import SuturiObject
+from src.football_repository.football_dataclasses.portar_dataclass import PortarObject
+from src.football_repository.football_dataclasses.suturi_dataclass import SuturiObject
 from src.football_repository.football_dataclasses.teams_dataclass import Team
 from src.football_repository.football_dataclasses.topStatistics_dataclass import TopStatisticsObject
 
@@ -48,8 +48,12 @@ class Repository:
                 CHECK (home_team != away_team),
                 UNIQUE(home_team, away_team, start_time),
                 UNIQUE(match_url),
-                FOREIGN KEY (home_team) REFERENCES Teams(team_id),
+                
+                FOREIGN KEY (home_team) REFERENCES Teams(team_id)
+                ON DELETE CASCADE,
+                
                 FOREIGN KEY (away_team) REFERENCES Teams(team_id)
+                ON DELETE CASCADE
             )
         ''')
         print("Am creat tabela de meciuri")
@@ -72,8 +76,12 @@ class Repository:
                 cartonase_rosii INTEGER,
                 
                 PRIMARY KEY (mid, team_id),
-                FOREIGN KEY (mid) REFERENCES Matches(mid),
+                
+                FOREIGN KEY (mid) REFERENCES Matches(mid)
+                ON DELETE CASCADE,
+                
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+                ON DELETE CASCADE
             );
         ''')
         print("Am creat tabela de top statistici")
@@ -95,8 +103,12 @@ class Repository:
                 goluri_marcate_cu_capul INTEGER,
                 
                 PRIMARY KEY (mid, team_id),
-                FOREIGN KEY (mid) REFERENCES Matches(mid),
+                
+                FOREIGN KEY (mid) REFERENCES Matches(mid)
+                ON DELETE CASCADE, 
+                
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+                ON DELETE CASCADE
             );
         ''')
         print("Am creat tabela de suturi")
@@ -117,8 +129,12 @@ class Repository:
                 erori_gol INTEGER,
                 
                 PRIMARY KEY (mid, team_id),
-                FOREIGN KEY (mid) REFERENCES Matches(mid),
+                
+                FOREIGN KEY (mid) REFERENCES Matches(mid)
+                ON DELETE CASCADE, 
+                
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+                ON DELETE CASCADE
             );
         ''')
         print("Am creat tabela de aparare")
@@ -143,8 +159,12 @@ class Repository:
                 xA REAL,
                 aruncari_de_la_margine INTEGER,
                 PRIMARY KEY (mid, team_id),
-                FOREIGN KEY (mid) REFERENCES Matches(mid),
+                
+                FOREIGN KEY (mid) REFERENCES Matches(mid)
+                ON DELETE CASCADE,
+                 
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+                ON DELETE CASCADE
             )
         ''')
         print("Am creat tabela de pase")
@@ -161,8 +181,12 @@ class Repository:
                 ofsaiduri INTEGER,
                 lovituri_libere INTEGER,
                 PRIMARY KEY (mid, team_id),
-                FOREIGN KEY (mid) REFERENCES Matches(mid),
+                
+                FOREIGN KEY (mid) REFERENCES Matches(mid)
+                ON DELETE CASCADE, 
+                
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+                ON DELETE CASCADE
             );
         ''')
         print("Am creat tabela de atac")
@@ -177,8 +201,12 @@ class Repository:
                 goluri_prevenite REAL,
                 
                 PRIMARY KEY (mid, team_id),
-                FOREIGN KEY (mid) REFERENCES Matches(mid),
+                
+                FOREIGN KEY (mid) REFERENCES Matches(mid)
+                ON DELETE CASCADE, 
+                
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+                ON DELETE CASCADE
             );
         ''')
         print("Am creat tabela de portari")
@@ -617,6 +645,36 @@ class Repository:
         except Exception as e:
             print(f"Eroare la gasirea portari dupa id: {e}")
     '''FUNCTII DE SELECT'''
+
+    '''FUNCTII DE DELETE'''
+    def delete_team_by_id(self, team_id):
+        try:
+            self.cursor.execute('''
+                DELETE FROM Teams 
+                    WHERE team_id = ?
+            ''', (
+                team_id,
+            ))
+            print(f"Am sters echipa {team_id}")
+            return True
+
+        except Exception as e:
+            print(f"Eroare la stergerea unei echipe: {e}")
+            return False
+
+    def delete_match_by_id(self, mid):
+        try:
+            self.cursor.execute('''
+                DELETE FROM Matches 
+                    WHERE mid = ?
+            ''', (
+                mid,
+            ))
+            print(f"Am sters meciul: {mid}")
+            return True
+        except Exception as e:
+            print(f"Eroare la stergerea unui meci: {e}")
+            return False
 
 if __name__ == "__main__":
     repository = Repository()

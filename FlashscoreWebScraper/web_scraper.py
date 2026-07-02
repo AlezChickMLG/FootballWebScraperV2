@@ -1,11 +1,10 @@
-import requests
-from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 import os
 import traceback
 from request_component import RequestComponent
 from pprint import pprint
 from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
+from football_repository.repository import Repository
 
 class FlashscoreWebScraper:
     def __init__(self, headless=True):
@@ -30,6 +29,9 @@ class FlashscoreWebScraper:
 
         #componenta care primeste cereri
         self.request_component = RequestComponent()
+
+        #repository
+        self.repository = Repository()
 
     def reset_page(self):
         self.page.goto(self.flashscore_url)

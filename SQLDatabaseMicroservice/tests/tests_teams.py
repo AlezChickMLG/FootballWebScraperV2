@@ -1,7 +1,7 @@
 import unittest
 
 from src.football_repository.football_dataclasses.teams_dataclass import Team
-from src.football_repository.repository import Repository
+from repository import Repository
 
 
 class TestsTeams(unittest.TestCase):
@@ -96,6 +96,21 @@ class TestsTeams(unittest.TestCase):
         self.assertIsNotNone(team, "A fost returnat None")
         self.assertIsInstance(team, Team, "A fost returnat tipul de data gresit")
         self.assertEqual(team, self.team, "Nu a returnat echipa corecta")
+
+    def test_team_delete_by_id(self):
+        self.repository.insert_team(self.team)
+
+        result = self.repository.delete_team_by_id(self.team.team_id)
+        self.assertTrue(
+            result,
+            "Nu s-a efectuat corect stergerea unei echipe"
+        )
+
+        result = self.repository.get_team_by_id(self.team.team_id)
+        self.assertIsNone(
+            result,
+            "A returnat un obiect desi nu trebuia"
+        )
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,10 +1,10 @@
 import copy
 import unittest
 
-from src.football_repository.football_dataclasses import AtacObject
-from src.football_repository.football_dataclasses import Match
+from src.football_repository.football_dataclasses.atac_dataclass import AtacObject
+from src.football_repository.football_dataclasses.matches_dataclass import Match
 from src.football_repository.football_dataclasses.teams_dataclass import Team
-from src.football_repository.repository import Repository
+from repository import Repository
 
 
 class TestsAtac(unittest.TestCase):
