@@ -44,6 +44,8 @@ class TestsAtac(unittest.TestCase):
         self.atac = AtacObject(
             mid=self.match.mid,
             team_id=self.match.home_team,
+            ocazii_mari=4,
+            cornere=10,
             atingeri_in_careul_advers=10,
             pase_filtrante_reusite=5,
             ofsaiduri=2,

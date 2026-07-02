@@ -151,11 +151,12 @@ class Repository:
             CREATE TABLE IF NOT EXISTS Atac (
                 mid TEXT NOT NULL,
                 team_id TEXT NOT NULL,
+                ocazii_mari INTEGER,
+                cornere INTEGER,
                 atingeri_in_careul_advers INTEGER,
                 pase_filtrante_reusite INTEGER,
                 ofsaiduri INTEGER,
                 lovituri_libere INTEGER,
-                
                 PRIMARY KEY (mid, team_id),
                 FOREIGN KEY (mid) REFERENCES Matches(mid),
                 FOREIGN KEY (team_id) REFERENCES Teams(team_id)
@@ -407,14 +408,18 @@ class Repository:
             self.cursor.execute("""
                                 INSERT INTO Atac (mid,
                                                   team_id,
+                                                  ocazii_mari,
+                                                  cornere,
                                                   atingeri_in_careul_advers,
                                                   pase_filtrante_reusite,
                                                   ofsaiduri,
                                                   lovituri_libere)
-                                VALUES (?, ?, ?, ?, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                                 """, (
                                     atac.mid,
                                     atac.team_id,
+                                    atac.ocazii_mari,
+                                    atac.cornere,
                                     atac.atingeri_in_careul_advers,
                                     atac.pase_filtrante_reusite,
                                     atac.ofsaiduri,
