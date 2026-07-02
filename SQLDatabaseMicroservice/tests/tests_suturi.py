@@ -1,10 +1,10 @@
 import copy
 import unittest
 
-from football_dataclasses.matches_dataclass import Match
-from football_dataclasses.suturi_dataclass import SuturiObject
-from football_dataclasses.teams_dataclass import Team
-from repository import Repository
+from src.football_repository.football_dataclasses import Match
+from src.football_repository.football_dataclasses import SuturiObject
+from src.football_repository.football_dataclasses.teams_dataclass import Team
+from src.football_repository.repository import Repository
 
 
 class TestsSuturi(unittest.TestCase):

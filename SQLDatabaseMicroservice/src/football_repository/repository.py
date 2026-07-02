@@ -1,13 +1,13 @@
 import sqlite3
 
-from football_dataclasses.aparare_dataclass import AparareObject
-from football_dataclasses.atac_dataclass import AtacObject
-from football_dataclasses.matches_dataclass import Match
-from football_dataclasses.pase_dataclass import PaseObject
-from football_dataclasses.portar_dataclass import PortarObject
-from football_dataclasses.suturi_dataclass import SuturiObject
-from football_dataclasses.teams_dataclass import Team
-from football_dataclasses.topStatistics_dataclass import TopStatisticsObject
+from src.football_repository.football_dataclasses.aparare_dataclass import AparareObject
+from src.football_repository.football_dataclasses import AtacObject
+from src.football_repository.football_dataclasses import Match
+from src.football_repository.football_dataclasses.pase_dataclass import PaseObject
+from src.football_repository.football_dataclasses import PortarObject
+from src.football_repository.football_dataclasses import SuturiObject
+from src.football_repository.football_dataclasses.teams_dataclass import Team
+from src.football_repository.football_dataclasses.topStatistics_dataclass import TopStatisticsObject
 
 
 class Repository:
