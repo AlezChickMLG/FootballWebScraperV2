@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-from web_scraper import FlashscoreWebScraper
+from src.football_scraper.web_scraper import FlashscoreWebScraper
 from unittest.mock import patch, MagicMock
 
 

@@ -1,7 +1,7 @@
 import unittest
 
-from web_scraper import FlashscoreWebScraper
-import pytest
+from src.football_scraper.web_scraper import FlashscoreWebScraper
+
 
 class TestIntegrationWebScraper(unittest.TestCase):
     @classmethod

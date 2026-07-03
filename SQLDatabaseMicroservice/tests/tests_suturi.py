@@ -4,7 +4,7 @@ import unittest
 from src.football_repository.football_dataclasses.matches_dataclass import Match
 from src.football_repository.football_dataclasses.suturi_dataclass import SuturiObject
 from src.football_repository.football_dataclasses.teams_dataclass import Team
-from repository import Repository
+from src.football_repository.repository import Repository
 
 
 class TestsSuturi(unittest.TestCase):
@@ -113,6 +113,21 @@ class TestsSuturi(unittest.TestCase):
         self.assertIsNotNone(suturi, "A fost returnat un None")
         self.assertIsInstance(suturi, SuturiObject, "A fost returnat un tip gresit de obiect")
         self.assertEqual(suturi, self.suturi, "A fost returnat obiectul gresit")
+
+    def test_delete_top_statistics(self):
+        self.helper_insert_teams_and_matches()
+
+        result = self.repository.delete_suturi_by_id(self.match.mid, self.match.home_team)
+        self.assertTrue(
+            result,
+            "Nu a fost efectuata stergerea cu succes a unui rand din suturi"
+        )
+
+        result = self.repository.get_suturi_by_id(self.match.mid, self.match.home_team)
+        self.assertIsNone(
+            result,
+            "A fost returnat un obiect de tip suturi"
+        )
 
 if __name__ == "__main__":
     unittest.main()

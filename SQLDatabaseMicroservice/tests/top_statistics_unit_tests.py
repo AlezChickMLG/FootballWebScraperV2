@@ -4,7 +4,7 @@ import unittest
 from src.football_repository.football_dataclasses.matches_dataclass import Match
 from src.football_repository.football_dataclasses.teams_dataclass import Team
 from src.football_repository.football_dataclasses.topStatistics_dataclass import TopStatisticsObject
-from repository import Repository
+from src.football_repository.repository import Repository
 
 
 class TestsTopStatistics(unittest.TestCase):

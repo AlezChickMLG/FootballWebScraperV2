@@ -1,5 +1,5 @@
 import unittest
-from repository import Repository
+from src.football_repository.repository import Repository
 
 
 class TestsTables(unittest.TestCase):

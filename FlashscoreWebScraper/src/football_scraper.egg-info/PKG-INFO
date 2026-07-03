@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: football-scraper
+Version: 0.1.0
+Summary: Scraper pentru statistici și meciuri de fotbal
+Author-email: Numele tău <email@example.com>
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.31.0
+Requires-Dist: beautifulsoup4>=4.12.0
+Requires-Dist: playwright>=1.44.0

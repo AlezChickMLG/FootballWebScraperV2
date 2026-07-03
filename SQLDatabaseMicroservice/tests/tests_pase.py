@@ -4,7 +4,7 @@ import unittest
 from src.football_repository.football_dataclasses.matches_dataclass import Match
 from src.football_repository.football_dataclasses.pase_dataclass import PaseObject
 from src.football_repository.football_dataclasses.teams_dataclass import Team
-from repository import Repository
+from src.football_repository.repository import Repository
 
 
 class TestsPase(unittest.TestCase):
@@ -117,6 +117,22 @@ class TestsPase(unittest.TestCase):
         self.assertIsNotNone(pase, "A fost returnat un None")
         self.assertIsInstance(pase, PaseObject, "A fost returnat un tip gresit de obiect")
         self.assertEqual(pase, self.pase, "A fost returnat obiectul gresit")
+
+    def test_delete_top_statistics(self):
+        self.helper_insert_teams_and_matches()
+
+        result = self.repository.delete_pase_by_id(self.match.mid, self.match.home_team)
+        self.assertTrue(
+            result,
+            "Nu a fost efectuata stergerea cu succes a unui rand din pase"
+        )
+
+        result = self.repository.get_pase_by_id(self.match.mid, self.match.home_team)
+        self.assertIsNone(
+            result,
+            "A fost returnat un obiect de tip pase"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,7 @@ import unittest
 from src.football_repository.football_dataclasses.atac_dataclass import AtacObject
 from src.football_repository.football_dataclasses.matches_dataclass import Match
 from src.football_repository.football_dataclasses.teams_dataclass import Team
-from repository import Repository
+from src.football_repository.repository import Repository
 
 
 class TestsAtac(unittest.TestCase):
@@ -109,6 +109,22 @@ class TestsAtac(unittest.TestCase):
         self.assertIsNotNone(atac, "A fost returnat un None")
         self.assertIsInstance(atac, AtacObject, "A fost returnat un tip gresit de obiect")
         self.assertEqual(atac, self.atac, "A fost returnat obiectul gresit")
+
+    def test_delete_top_statistics(self):
+        self.helper_insert_teams_and_matches()
+
+        result = self.repository.delete_atac_by_id(self.match.mid, self.match.home_team)
+        self.assertTrue(
+            result,
+            "Nu a fost efectuata stergerea cu succes a unui rand din atac"
+        )
+
+        result = self.repository.get_atac_by_id(self.match.mid, self.match.home_team)
+        self.assertIsNone(
+            result,
+            "A fost returnat un obiect de tip atac"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
