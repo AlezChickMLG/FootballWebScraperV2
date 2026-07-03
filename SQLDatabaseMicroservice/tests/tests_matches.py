@@ -1,8 +1,8 @@
 import unittest
 
-from src.football_repository.football_dataclasses.matches_dataclass import Match
-from src.football_repository.football_dataclasses.teams_dataclass import Team
-from src.football_repository.repository import Repository
+from football_repository.football_dataclasses.matches_dataclass import Match
+from football_repository.football_dataclasses.teams_dataclass import Team
+from football_repository.repository import Repository
 
 
 class TestsMatches(unittest.TestCase):
@@ -36,6 +36,15 @@ class TestsMatches(unittest.TestCase):
             away_team="456",
             start_time="maine la pranz",
             match_url="facebuci.com",
+            match_score="0:3"
+        )
+
+        self.same_teams_match = Match(
+            mid="12345",
+            home_team="abcdef",
+            away_team="xyz",
+            start_time="maine la coi",
+            match_url="facebuci.org",
             match_score="0:3"
         )
 
@@ -132,15 +141,39 @@ class TestsMatches(unittest.TestCase):
         self.assertIsInstance(match, Match, "A fost returnat tipul de data gresit")
         self.assertEqual(match, self.match, "Nu a returnat echipa corecta")
 
-    def test_matches_get_match_by_details(self):
+    def helper_test_matches_get_match(self, home_team, away_team=None, start_time=None):
         self.helper_insert_teams_and_match()
+
+        result = self.repository.insert_match(self.same_teams_match)
+        self.assertTrue(result)
+
         result = self.repository.insert_match(self.another_match)
         self.assertFalse(result)
 
-        match = self.repository.get_match_by_details(self.match.home_team, self.match.away_team, self.match.start_time)
-        self.assertIsNotNone(match, "A fost returnat None")
-        self.assertIsInstance(match, Match, "A fost returnat tipul de data gresit")
-        self.assertEqual(match, self.match, "Nu a returnat echipa corecta")
+        matches = self.repository.get_match_by_details(home_team=home_team, away_team=away_team, start_time=start_time)
+        self.assertIsNotNone(matches, "A fost returnat None")
+        self.assertIsInstance(matches, list, "A fost returnat tipul de colectie gresit")
+
+        for match in matches:
+            self.assertIsInstance(match, Match, "A fost returnat tipul de data gresit in lista")
+
+        if self.match.start_time == start_time:
+            self.assertIn(self.match, matches, "self.match nu exista in matches")
+
+        if self.same_teams_match.start_time == start_time:
+            self.assertIn(self.same_teams_match, matches, "self.match nu exista in matches")
+
+    def test_matches_get_match_by_all_details(self):
+        self.helper_test_matches_get_match(home_team=self.match.home_team, away_team=self.match.away_team, start_time=self.match.start_time)
+
+    def test_matches_get_match_by_home_team(self):
+        self.helper_test_matches_get_match(home_team=self.match.home_team)
+
+    def test_matches_get_match_by_home_team_and_away_team(self):
+        self.helper_test_matches_get_match(home_team=self.match.home_team, away_team=self.match.away_team)
+
+    def test_matches_get_match_by_all_details_home_team_and_start_time(self):
+        self.helper_test_matches_get_match(home_team=self.match.home_team, start_time=self.match.start_time)
 
     def test_matches_delete_by_id(self):
         self.helper_insert_teams_and_match()

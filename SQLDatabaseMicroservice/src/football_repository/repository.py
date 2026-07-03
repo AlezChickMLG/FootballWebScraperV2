@@ -537,20 +537,23 @@ class Repository:
             print(f"Eroare la gasirea meciului dupa id: {mid}")
             return None
 
-    def get_match_by_details(self, home_team, away_team, start_time):
+    def get_match_by_details(self, home_team, away_team=None, start_time=None):
         try:
-            self.cursor.execute('''
-                SELECT * FROM Matches 
-                WHERE home_team = ?
-                AND away_team = ?
-                AND start_time = ?
-            ''', (
-                home_team,
-                away_team,
-                start_time
-            ))
+            sql = '''SELECT * FROM Matches
+                  WHERE home_team = ?'''
+            parameters = [home_team]
 
-            return Match(*self.cursor.fetchone())
+            if away_team:
+                sql += ''' AND away_team = ?'''
+                parameters.append(away_team)
+
+            if start_time:
+                sql += ''' AND start_time = ?'''
+                parameters.append(start_time)
+
+            self.cursor.execute(sql, parameters)
+
+            return list(Match(*match) for match in self.cursor.fetchall())
         except Exception as e:
             print(f"Eroare la gasirea meciului dupa echipe si timpul de start: {e}")
             return None

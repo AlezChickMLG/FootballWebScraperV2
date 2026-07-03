@@ -25,9 +25,6 @@ class FlashscoreWebScraper:
         self.page.click("#onetrust-accept-btn-handler")
         print("Am apasat pe butonul de cookies")
 
-        #repository
-        #self.repository = Repository()
-
     def reset_page(self):
         self.page.goto(self.flashscore_url)
 
@@ -208,9 +205,9 @@ class FlashscoreWebScraper:
             matches = self.get_all_matches()
 
             #procesam meciurile
-            self.process_matches(matches, limit)
+            self.process_matches(team_name, matches, limit)
 
-    def process_matches(self, matches, limit):
+    def process_matches(self, team, matches, limit):
         for match_index, match in enumerate(matches):
             if match_index >= limit:
                 print("Am terminat de procesat statisticile")

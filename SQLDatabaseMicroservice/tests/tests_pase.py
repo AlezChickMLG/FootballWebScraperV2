@@ -1,10 +1,10 @@
 import copy
 import unittest
 
-from src.football_repository.football_dataclasses.matches_dataclass import Match
-from src.football_repository.football_dataclasses.pase_dataclass import PaseObject
-from src.football_repository.football_dataclasses.teams_dataclass import Team
-from src.football_repository.repository import Repository
+from football_repository.football_dataclasses.matches_dataclass import Match
+from football_repository.football_dataclasses.pase_dataclass import PaseObject
+from football_repository.football_dataclasses.teams_dataclass import Team
+from football_repository.repository import Repository
 
 
 class TestsPase(unittest.TestCase):
