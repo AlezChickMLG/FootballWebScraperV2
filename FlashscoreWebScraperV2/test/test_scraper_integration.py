@@ -1,12 +1,14 @@
+import sys, os
 import unittest
 
-from src.football_scraper.web_scraper import FlashscoreWebScraper
+# adaugi radacina proiectului la path
 
+from src.football_scraper.web_scraper import FlashscoreWebScraper
 
 class TestIntegrationWebScraper(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.scraper = FlashscoreWebScraper()
+        cls.scraper = FlashscoreWebScraper(headless=False)
 
     @classmethod
     def tearDownClass(cls):

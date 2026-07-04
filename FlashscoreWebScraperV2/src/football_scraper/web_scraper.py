@@ -101,10 +101,20 @@ class FlashscoreWebScraper:
             print(f"Am intampinat o eroare la gasirea / procesarea meciurilor: {e}")
             traceback.print_exc()
 
-    def get_statistics(self):
+    def get_statistics(self, match_url=None):
         try:
+            if match_url:
+                #navigam pe pagina meciului
+                self.navigate_to_match_page(match_url)
+
+                #navigam pe tabul de statistici
+                self.navigate_to_statistics_tab()
+
+                # obtinem statisticile
+                self.page.wait_for_selector(".section")
+
             self.page.wait_for_selector("div[data-testid='wcl-statistics']")
-            statistics = self.page.query_selector_all(".section")
+            statistics = self.page.query_selector_all(".sectionsWrapper .section")
 
             statistics_dict = {}
 
@@ -112,6 +122,7 @@ class FlashscoreWebScraper:
                 for section in statistics:
                     individual_statistics = section.query_selector_all("div[data-testid='wcl-statistics']")
 
+                    self.page.wait_for_selector(".sectionHeader")
                     title_name_statistics = section.query_selector(".sectionHeader")
 
                     if title_name_statistics is None:
@@ -215,19 +226,14 @@ class FlashscoreWebScraper:
 
             # print(f"Obtinem statisticile pentru meciul {match['home_team']} - {match['away_team']} disputat la data de {match['start_time']}")
             pprint(match)
-            self.navigate_to_match_page(match['match_url'])
 
-            # navigam la tabul statisticilor
-            self.navigate_to_statistics_tab()
-
-            # obtinem statisticile
-            self.page.wait_for_selector(".section")
             statistics = self.get_statistics()
             pprint(statistics)
 
             # scriem rezultatele
             if statistics:
-                self.write_to_file(team, match, statistics)
+                pass
+                #self.write_to_file(team, match, statistics)
 
             else:
                 print("Nu am putat procesa statisticile sau nu exista")
@@ -248,10 +254,10 @@ class FlashscoreWebScraper:
     #     if info:
     #         self.process_info(info, limit=1)
 
-# if __name__ == "__main__":
-    # web_scraper = FlashscoreWebScraper()
-    # teams = ["Ecuador"]
-    # for team in teams:
-    #     web_scraper.process_info({
-    #         "team": team
-    #     })
+if __name__ == "__main__":
+    web_scraper = FlashscoreWebScraper()
+    teams = ["Ecuador"]
+    for team in teams:
+        web_scraper.process_info({
+            "team": team
+        })

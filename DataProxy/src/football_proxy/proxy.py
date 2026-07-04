@@ -26,16 +26,23 @@ class Proxy:
             pass
 
         else:
-            #earliest_match = max(all_matches, key=lambda match: datetime.strptime(match.start_time, "%d.%m.%Y"))
-            earliest_not_played_yet_match = None
-            for match in all_matches:
-                formatted_match_time = datetime.strptime(match.start_time, "%d.%m.%Y")
-                if formatted_match_time > datetime.now():
-                    if earliest_not_played_yet_match is None or formatted_match_time >
-            if earliest_not_played_yet_match > datetime.now():
+            matches_not_played = self.repository.get_matches_by_is_played(is_played=False)
+            #exista meciuri nejucate care nu au fost scanate
+            if matches_not_played:
                 print("Trebuie sa rulez din nou flashscore web scraper")
+                #gasim cel mai vechi meci nejucat
+                oldest_match_not_played = min(
+                    matches_not_played,
+                    key=lambda match: datetime.strptime(match.start_time, "%d.%m.%Y")
+                )
+
+                #in viitor trebuie pus un time limit
+                #scanam iar meciurile, dar doar cele care nu exista deja
+
+            #toate meciurile sunt scanate deja
             else:
-                print()
+
+
 
         return all_matches
 
