@@ -184,13 +184,18 @@ class TestsMatches(unittest.TestCase):
         result = self.repository.insert_match(self.same_teams_match)
         self.assertTrue(result)
 
+        self.another_match.home_team = "abcdef"
+        self.another_match.away_team = "xyz"
+        self.another_match.start_time = "maine dupa-amiaza"
+
         result = self.repository.insert_match(self.another_match)
-        self.assertFalse(result)
+        self.assertTrue(result)
 
         matches = self.repository.get_matches_by_is_played(is_played)
 
         self.assertIsNotNone(matches, "A fost returnat None")
         self.assertIsInstance(matches, list, "A fost returnat tipul de colectie gresit")
+        self.assertFalse(len(matches) == 0,"A fost returnata o lista goala")
 
         for match in matches:
             self.assertIsInstance(match, Match, "A fost returnat tipul de data gresit in lista")

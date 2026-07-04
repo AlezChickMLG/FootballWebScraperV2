@@ -279,7 +279,7 @@ class Repository:
                 match.start_time,
                 match.match_url,
                 match.match_score,
-                match.is_played
+                1 if match.is_played else 0
             ))
 
             print("Am introdus un obiect in tabela matches")
@@ -570,7 +570,7 @@ class Repository:
                   WHERE is_played = ?'''
 
             self.cursor.execute(sql, (
-                is_played,
+                1 if is_played else 0,
             ))
 
             return list(Match(*match) for match in self.cursor.fetchall())
