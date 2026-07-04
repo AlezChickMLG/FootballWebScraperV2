@@ -27,7 +27,8 @@ class TestsMatches(unittest.TestCase):
             away_team="xyz",
             start_time="maine la pranz",
             match_url="facebuci.ro",
-            match_score="0:3"
+            match_score="0:3",
+            is_played=False
         )
 
         self.another_match = Match(
@@ -36,7 +37,8 @@ class TestsMatches(unittest.TestCase):
             away_team="456",
             start_time="maine la pranz",
             match_url="facebuci.com",
-            match_score="0:3"
+            match_score="0:3",
+            is_played=True
         )
 
         self.same_teams_match = Match(
@@ -45,7 +47,8 @@ class TestsMatches(unittest.TestCase):
             away_team="xyz",
             start_time="maine la coi",
             match_url="facebuci.org",
-            match_score="0:3"
+            match_score="0:3",
+            is_played=False
         )
 
     def tearDown(self):
@@ -174,6 +177,30 @@ class TestsMatches(unittest.TestCase):
 
     def test_matches_get_match_by_all_details_home_team_and_start_time(self):
         self.helper_test_matches_get_match(home_team=self.match.home_team, start_time=self.match.start_time)
+
+    def helper_matches_get_matches_not_played(self, is_played):
+        self.helper_insert_teams_and_match()
+
+        result = self.repository.insert_match(self.same_teams_match)
+        self.assertTrue(result)
+
+        result = self.repository.insert_match(self.another_match)
+        self.assertFalse(result)
+
+        matches = self.repository.get_matches_by_is_played(is_played)
+
+        self.assertIsNotNone(matches, "A fost returnat None")
+        self.assertIsInstance(matches, list, "A fost returnat tipul de colectie gresit")
+
+        for match in matches:
+            self.assertIsInstance(match, Match, "A fost returnat tipul de data gresit in lista")
+            self.assertIn(match, matches, "match nu exista in matches")
+
+    def test_matches_get_matches_not_played_true(self):
+        self.helper_matches_get_matches_not_played(True)
+
+    def test_matches_get_matches_not_played_false(self):
+        self.helper_matches_get_matches_not_played(False)
 
     def test_matches_delete_by_id(self):
         self.helper_insert_teams_and_match()

@@ -26,9 +26,16 @@ class Proxy:
             pass
 
         else:
-            earliest_match = max(all_matches, key=lambda match: datetime.strptime(match.start_time, "%d.%m.%y"))
-            if earliest_match > datetime.now():
+            #earliest_match = max(all_matches, key=lambda match: datetime.strptime(match.start_time, "%d.%m.%Y"))
+            earliest_not_played_yet_match = None
+            for match in all_matches:
+                formatted_match_time = datetime.strptime(match.start_time, "%d.%m.%Y")
+                if formatted_match_time > datetime.now():
+                    if earliest_not_played_yet_match is None or formatted_match_time >
+            if earliest_not_played_yet_match > datetime.now():
                 print("Trebuie sa rulez din nou flashscore web scraper")
+            else:
+                print()
 
         return all_matches
 

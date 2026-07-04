@@ -44,8 +44,11 @@ class Repository:
                 start_time TEXT,
                 match_url TEXT NOT NULL,
                 match_score TEXT NOT NULL,
+                is_played INTEGER,
                 
                 CHECK (home_team != away_team),
+                CHECK (is_played IN (0, 1)),
+                
                 UNIQUE(home_team, away_team, start_time),
                 UNIQUE(match_url),
                 
@@ -258,8 +261,10 @@ class Repository:
                     away_team, 
                     start_time,
                     match_url,
-                    match_score
+                    match_score,
+                    is_played
                 ) VALUES (
+                    ?,
                     ?,
                     ?,
                     ?,
@@ -273,7 +278,8 @@ class Repository:
                 match.away_team,
                 match.start_time,
                 match.match_url,
-                match.match_score
+                match.match_score,
+                match.is_played
             ))
 
             print("Am introdus un obiect in tabela matches")
@@ -557,6 +563,21 @@ class Repository:
         except Exception as e:
             print(f"Eroare la gasirea meciului dupa echipe si timpul de start: {e}")
             return None
+
+    def get_matches_by_is_played(self, is_played=True):
+        try:
+            sql = '''SELECT * FROM Matches
+                  WHERE is_played = ?'''
+
+            self.cursor.execute(sql, (
+                is_played,
+            ))
+
+            return list(Match(*match) for match in self.cursor.fetchall())
+        except Exception as e:
+            print(f"Eroare la gasirea meciului dupa echipe si timpul de start: {e}")
+            return None
+
 
     def get_top_statistics_by_id(self, mid, team_id):
         try:

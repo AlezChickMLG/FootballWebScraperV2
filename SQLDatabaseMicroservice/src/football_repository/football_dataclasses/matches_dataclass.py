@@ -8,3 +8,4 @@ class Match:
     start_time: str
     match_url: str
     match_score: str
+    is_played: int = 1
