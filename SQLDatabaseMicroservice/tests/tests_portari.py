@@ -46,7 +46,8 @@ class TestsPortari(unittest.TestCase):
             team_id=self.match.home_team,
             interventii_portar=5,
             xGOT_impotriva=1.64,
-            goluri_prevenite=1.44
+            goluri_prevenite=1.44,
+            aut_de_poarta=12
         )
 
     def tearDown(self):

@@ -202,6 +202,7 @@ class Repository:
                 interventii_portar INTEGER,
                 xGOT_impotriva REAL,
                 goluri_prevenite REAL,
+                aut_de_poarta INTEGER,
                 
                 PRIMARY KEY (mid, team_id),
                 
@@ -482,14 +483,16 @@ class Repository:
                                                      team_id,
                                                      interventii_portar,
                                                      xGOT_impotriva,
-                                                     goluri_prevenite)
-                                VALUES (?, ?, ?, ?, ?)
+                                                     goluri_prevenite,
+                                                     aut_de_poarta)
+                                VALUES (?, ?, ?, ?, ?, ?)
                                 """, (
                                     portar.mid,
                                     portar.team_id,
                                     portar.interventii_portar,
                                     portar.xGOT_impotriva,
-                                    portar.goluri_prevenite
+                                    portar.goluri_prevenite,
+                                    portar.aut_de_poarta
                                 ))
 
             print("Am introdus un obiect in tabela portar")

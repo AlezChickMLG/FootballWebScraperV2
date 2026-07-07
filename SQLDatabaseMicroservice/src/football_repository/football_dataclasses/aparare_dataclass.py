@@ -4,12 +4,12 @@ from dataclasses import dataclass
 class AparareObject:
     mid: str
     team_id: str
-    faulturi: int
-    deposedari_procentaj: int
-    deposedari_reusite: int
-    deposedari_totale: int
-    dueluri_castigate: int
-    respingeri: int
-    interceptii: int
-    erori_sut: int
-    erori_gol: int
+    faulturi: int=-1
+    deposedari_procentaj: int=-1
+    deposedari_reusite: int=-1
+    deposedari_totale: int=-1
+    dueluri_castigate: int=-1
+    respingeri: int=-1
+    interceptii: int=-1
+    erori_sut: int=-1
+    erori_gol: int=-1

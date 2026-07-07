@@ -1,5 +1,6 @@
 pyproject.toml
 src/football_repository/__init__.py
+src/football_repository/repository.py
 src/football_repository.egg-info/PKG-INFO
 src/football_repository.egg-info/SOURCES.txt
 src/football_repository.egg-info/dependency_links.txt

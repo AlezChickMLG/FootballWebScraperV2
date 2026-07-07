@@ -1,5 +1,6 @@
 import sys, os
 import unittest
+from datetime import datetime
 
 # adaugi radacina proiectului la path
 
@@ -116,10 +117,10 @@ class TestIntegrationWebScraper(unittest.TestCase):
         self.scraper.navigate_to_statistics_tab()
     '''Helper functions'''
 
-    def test_get_all_matches_correct(self):
-        self.navigate_to_team_page_results()
+    def helper_test_get_all_matches(self, time_limit=None):
+        team_url = self.scraper.get_team_url(self.test_team)
 
-        all_matches = self.scraper.get_all_matches()
+        all_matches = self.scraper.get_all_matches(team_url=team_url, time_limit=time_limit)
         self.assertIsNotNone(all_matches)
         self.assertGreater(len(all_matches), 0)
 
@@ -129,6 +130,16 @@ class TestIntegrationWebScraper(unittest.TestCase):
             self.assertIn("away_team", match)
             self.assertIn("match_url", match)
             self.assertIn("start_time", match)
+
+            if time_limit:
+                self.assertGreater(datetime.strptime(match['start_time'], "%d.%m.%Y"), time_limit, "A fost returnat un meci care se joaca dupa time_limit")
+
+    def test_get_all_matches_correct(self):
+        self.helper_test_get_all_matches()
+
+    def test_get_all_matches_time_limit(self):
+        time_limit = datetime(year=2026, month=2, day=10)
+        self.helper_test_get_all_matches(time_limit)
 
     def test_get_all_statistics_correct(self):
         self.navigate_to_match_statistics()

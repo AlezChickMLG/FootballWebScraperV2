@@ -2,6 +2,7 @@ from playwright.sync_api import sync_playwright
 import os
 import traceback
 from pprint import pprint
+from datetime import datetime
 from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
 
 class FlashscoreWebScraper:
@@ -60,8 +61,20 @@ class FlashscoreWebScraper:
             print(f"Eroare intampinata la gasirea echipei {team_name}")
             return False
 
-    def get_all_matches(self, time_limit=None):
+    def get_all_matches(self, team_url=None, time_limit=None):
         try:
+            if team_url:
+                # navigam catre pagina echipei
+                self.navigate_to_team_page(team_url)
+
+                try:
+                    self.page.wait_for_selector("a.tabs__tab[title='Rezultate']")
+                except Exception as e:
+                    print("A expirat timeout-ul")
+
+                # navigam catre pagina de rezultate
+                self.navigate_to_results_page()
+
             all_matches = self.page.query_selector_all(".event__match")
             matches_dict = []
 
@@ -70,7 +83,9 @@ class FlashscoreWebScraper:
             for match in all_matches:
                 home_team_element = match.query_selector(".event__homeParticipant span")
                 away_team_element = match.query_selector(".event__awayParticipant span")
-                start_time_element = match.query_selector(".event__time")
+                #start_time_element = match.query_selector(".event__time")
+                #start_time_element = match.query_selector("span[data-testid='wcl-stageTime'] span[data-testid='wcl-scores-simple-text-01']")
+                start_time_element = match.query_selector("span[data-testid='wcl-stageTime']")
                 match_url_element = match.query_selector(".eventRowLink")
 
                 if not match_url_element:
@@ -92,7 +107,12 @@ class FlashscoreWebScraper:
 
                 if start_time_element:
                     start_time = start_time_element.inner_text()
-                    match_dict["start_time"] = start_time
+                    formatted_start_time, string_start_time = self.process_start_time(start_time)
+                    match_dict["start_time"] = string_start_time
+
+                    if time_limit:
+                        if formatted_start_time < time_limit:
+                            break
 
                 matches_dict.append(match_dict)
 
@@ -184,6 +204,21 @@ class FlashscoreWebScraper:
         self.page.goto(f"{self.flashscore_url_no_slash}{button_href}")
         print("Am ajuns pe pagina de statistici")
 
+    def process_start_time(self, start_time):
+        try:
+            start_time = start_time.split("\n")[0]
+            formatted_start_time = datetime.strptime(start_time, "%d.%m.%Y")
+            return formatted_start_time, start_time
+        except ValueError:
+            try:
+                hour_start_time = datetime.strptime(start_time, "%d.%m. %H:%M")
+                hour_start_time = hour_start_time.replace(year=datetime.now().year)
+                return hour_start_time, hour_start_time.strftime("%d.%m.%Y")
+            except ValueError:
+                print("Format necunoscut")
+
+
+
     def process_info(self, info, limit=10):
         team_name = info["team"]
         print(f"Prelucram echipa {team_name}")
@@ -201,19 +236,8 @@ class FlashscoreWebScraper:
             return
 
         elif team_url is not False:
-            #navigam catre pagina echipei
-            self.navigate_to_team_page(team_url)
-
-            try:
-                self.page.wait_for_selector("a.tabs__tab[title='Rezultate']")
-            except Exception as e:
-                print("A expirat timeout-ul")
-
-            #navigam catre pagina de rezultate
-            self.navigate_to_results_page()
-
             #obtinem toate meciurile
-            matches = self.get_all_matches()
+            matches = self.get_all_matches(team_url=team_url)
 
             #procesam meciurile
             self.process_matches(team_name, matches, limit)
@@ -256,8 +280,5 @@ class FlashscoreWebScraper:
 
 if __name__ == "__main__":
     web_scraper = FlashscoreWebScraper()
-    teams = ["Ecuador"]
-    for team in teams:
-        web_scraper.process_info({
-            "team": team
-        })
+    start_time = "02.07. 22:00"
+    web_scraper.process_start_time(start_time)
