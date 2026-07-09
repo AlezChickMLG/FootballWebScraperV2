@@ -1,4 +1,5 @@
 import unittest
+from re import match
 from unittest.mock import MagicMock
 
 from football_repository.repository import Repository
@@ -161,22 +162,9 @@ class ProxyTestCase(unittest.TestCase):
         )
 
     def test_get_matches_run_scraper(self):
-        result = self.proxy.repository.insert_team(self.team)
-        self.assertTrue(result)
-
-        result = self.proxy.repository.insert_team(self.another_team)
-        self.assertTrue(result)
-
-        self.match.is_played = False
-        result = self.proxy.repository.insert_match(self.match)
-        self.assertTrue(result)
-
+        self.not_played_match.is_played = False
         self.another_match.is_played = False
-        result = self.proxy.repository.insert_match(self.another_match)
-        self.assertTrue(result)
-
-        result = self.proxy.repository.insert_match(self.not_played_match)
-        self.assertTrue(result)
+        self.helper_insert_teams_and_matches()
 
         all_matches = self.proxy.get_matches(home_team=self.team.team_id)
         self.assertIsNotNone(
@@ -213,10 +201,28 @@ class ProxyTestCase(unittest.TestCase):
         result = self.proxy.repository.insert_match(self.another_match)
         self.assertTrue(result, True)
 
+        result = self.proxy.repository.insert_match(self.not_played_match)
+        self.assertTrue(result, True)
+
     def test_scan_matches(self):
         self.proxy.flashscore_web_scraper.get_statistics.return_value = self.stats
         self.helper_insert_teams_and_matches()
-        self.proxy.scan_matches_for_statistics([self.match, self.another_match])
+
+        statistics = self.proxy.scan_matches_for_statistics([self.match, self.another_match])
+        self.assertIsInstance(statistics, dict, "Colectie gresita")
+        self.assertTrue(len(statistics.keys()) == 2, "Numar diferit de meciuri")
+
+        self.assertIn(self.match.mid, statistics.keys(), f"Meci inexistent: {self.match.mid}")
+        self.assertIn(self.another_match.mid, statistics.keys(), f"Meci inexistent: {self.another_match.mid}")
+
+        for match, teams in statistics.items():
+            self.assertTrue(len(teams.values()) == 2, "Numar diferit de echipe")
+
+            repo_match = self.proxy.repository.get_match_by_id(match)
+            self.assertIsNotNone(repo_match, f"Meci gol")
+
+            self.assertIn(repo_match.home_team, teams.keys(), f"Nu exista echipa {repo_match.home_team}")
+            self.assertIn(repo_match.away_team, teams.keys(), f"Nu exista echipa {repo_match.away_team}")
 
 if __name__ == '__main__':
     unittest.main()

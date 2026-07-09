@@ -35,11 +35,43 @@ class TestIntegrationWebScraper(unittest.TestCase):
         url = self.scraper.get_team_url("Span")
         self.assertIsNone(url)
 
+    def test_get_multiple_team_urls(self):
+        #Spania
+        expected_url = "bLyo6mco"
+
+        url = self.scraper.get_team_url(self.test_team)
+        self.assertIsNotNone(url)
+        self.assertIn(expected_url, url)
+
+        #Germania
+        expected_url = "ptQide1O"
+        self.test_team = "Germania"
+
+        url = self.scraper.get_team_url(self.test_team)
+        self.assertIsNotNone(url)
+        self.assertIn(expected_url, url)
+
+        #Argentina
+        expected_url = "f9OppQjp"
+        self.test_team = "Argentina"
+
+        url = self.scraper.get_team_url(self.test_team)
+        self.assertIsNotNone(url)
+        self.assertIn(expected_url, url)
+
     def test_navigate_to_team_page(self):
         expected_url = "https://www.flashscore.ro/echipa/spania/bLyo6mco/"
 
         team_url = self.scraper.get_team_url(self.test_team)
         self.scraper.navigate_to_team_page(team_url)
+
+        self.assertEqual(expected_url, self.scraper.page.url)
+
+    def test_navigate_to_team_page_by_id(self):
+        expected_url = "https://www.flashscore.ro/echipa/capul-verde/MocyWdm7/"
+
+        team_url = self.scraper.get_team_url("Capul Verde")
+        self.scraper.navigate_to_team_page_by_id(team_name="Capul Verde", team_id=team_url.split(":")[-1])
 
         self.assertEqual(expected_url, self.scraper.page.url)
 
@@ -135,6 +167,15 @@ class TestIntegrationWebScraper(unittest.TestCase):
                 self.assertGreater(datetime.strptime(match['start_time'], "%d.%m.%Y"), time_limit, "A fost returnat un meci care se joaca dupa time_limit")
 
     def test_get_all_matches_correct(self):
+        self.helper_test_get_all_matches()
+
+    def test_get_all_matches_multiple_teams(self):
+        self.helper_test_get_all_matches()
+
+        self.test_team = "Germania"
+        self.helper_test_get_all_matches()
+
+        self.test_team = "Argentina"
         self.helper_test_get_all_matches()
 
     def test_get_all_matches_time_limit(self):

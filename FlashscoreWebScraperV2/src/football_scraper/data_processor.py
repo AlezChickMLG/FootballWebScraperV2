@@ -2,6 +2,7 @@ from football_repository.football_dataclasses.aparare_dataclass import AparareOb
 from football_repository.football_dataclasses.atac_dataclass import AtacObject
 from football_repository.football_dataclasses.pase_dataclass import PaseObject
 from football_repository.football_dataclasses.portar_dataclass import PortarObject
+from football_repository.football_dataclasses.teams_dataclass import Team
 from football_repository.football_dataclasses.topStatistics_dataclass import TopStatisticsObject
 from football_repository.football_dataclasses.suturi_dataclass import SuturiObject
 
@@ -10,6 +11,9 @@ from dataclasses import fields
 
 class DataProcessor:
     def __init__(self):
+        pass
+
+    def filter_matches(self, matches, home_team, away_team=None, start_time=None, start_date=None, finish_date=None, competition=None):
         pass
 
     def process_statistics(self, mid, home_team_id, away_team_id, statistics):
@@ -105,3 +109,10 @@ class DataProcessor:
             away_team_statistics[category] = away_team_object
 
         return home_team_statistics, away_team_statistics
+
+    def format_team_object(self, team_name, team_url):
+        return Team(
+            team_id=team_url.split(':')[-1],
+            team_name=team_name,
+            url=f"https://www.flashscore.ro/echipa/{team_name.lower().replace(' ', '-')}/{team_url.split(':')[-1]}"
+        )

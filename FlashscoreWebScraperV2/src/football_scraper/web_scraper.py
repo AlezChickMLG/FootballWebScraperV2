@@ -5,6 +5,13 @@ from pprint import pprint
 from datetime import datetime
 from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
 
+def reset_decorator(func):
+    def wrapper(self, *args, **kwargs):
+        self.reset_page()
+        result = func(self, *args, **kwargs)
+        return result
+    return wrapper
+
 class FlashscoreWebScraper:
     def __init__(self, headless=True):
         self.sync_playwright = sync_playwright().start()
@@ -30,6 +37,7 @@ class FlashscoreWebScraper:
         self.page.goto(self.flashscore_url)
 
     #Intoarce toate echipele recomandate de bara de cautare
+    @reset_decorator
     def get_team_url(self, team_name):
         try:
             self.page.click("#search-window")
@@ -61,6 +69,7 @@ class FlashscoreWebScraper:
             print(f"Eroare intampinata la gasirea echipei {team_name}")
             return False
 
+    @reset_decorator
     def get_all_matches(self, team_url=None, time_limit=None):
         try:
             if team_url:
@@ -121,6 +130,7 @@ class FlashscoreWebScraper:
             print(f"Am intampinat o eroare la gasirea / procesarea meciurilor: {e}")
             traceback.print_exc()
 
+    @reset_decorator
     def get_statistics(self, match_url=None):
         try:
             if match_url:
@@ -183,6 +193,9 @@ class FlashscoreWebScraper:
         full_team_url = f"{self.flashscore_url}{team_url}"
         self.page.goto(full_team_url)
         print(f"Am intrat pe pagina echipei")
+
+    def navigate_to_team_page_by_id(self, team_name, team_id):
+        self.page.goto(f"{self.flashscore_url_no_slash}/echipa/{team_name.lower().replace(' ', '-')}/{team_id}")
 
     def navigate_to_results_page(self):
         results_href_element = self.page.query_selector("a.tabs__tab[title='Rezultate']")
