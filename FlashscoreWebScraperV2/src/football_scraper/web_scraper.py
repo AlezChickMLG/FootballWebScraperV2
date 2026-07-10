@@ -70,9 +70,20 @@ class FlashscoreWebScraper:
             return False
 
     @reset_decorator
-    def get_all_matches(self, team_url=None, time_limit=None):
+    def get_all_matches(self, team_id=None, team_name=None, team_url=None, time_limit=None):
         try:
-            if team_url:
+            if team_id and team_name:
+                self.navigate_to_team_page_by_id(team_id=team_id, team_name=team_name)
+
+                try:
+                    self.page.wait_for_selector("a.tabs__tab[title='Rezultate']")
+                except Exception as e:
+                    print("A expirat timeout-ul")
+
+                # navigam catre pagina de rezultate
+                self.navigate_to_results_page()
+
+            elif team_url:
                 # navigam catre pagina echipei
                 self.navigate_to_team_page(team_url)
 
@@ -170,11 +181,11 @@ class FlashscoreWebScraper:
                         details = individual_statistic.query_selector("div").query_selector_all("div")
 
                         if details:
-                            home_value_element = details[0].query_selector("span")
-                            home_value = home_value_element.inner_text()
+                            home_value_element = details[0].query_selector_all("span")
+                            home_value = "".join([element.inner_text() for element in home_value_element])
 
-                            away_value_element = details[2].query_selector("span")
-                            away_value = away_value_element.inner_text()
+                            away_value_element = details[2].query_selector_all("span")
+                            away_value = "".join([element.inner_text() for element in away_value_element])
 
                             statistic_name_element = details[1].query_selector("span")
                             statistic_name = statistic_name_element.inner_text()
@@ -183,11 +194,26 @@ class FlashscoreWebScraper:
                                 "home": home_value,
                                 "away": away_value
                             }
-                        
+
                 return statistics_dict
         except Exception as e:
             print(f"Am intampinat o eroare la procesarea statisticilor: {e}")
             traceback.print_exc()
+
+    def get_team_flags_from_statistics(self, match_url=None):
+        try:
+            if match_url:
+                self.navigate_to_match_page(match_url)
+                self.navigate_to_statistics_tab()
+
+            home_team_image_url, away_team_image_url = (
+                [element.get_attribute("src") for element in self.page.query_selector_all(
+                    ".container__detailInner .duelParticipant__container .participant__image")[:2]])
+            return home_team_image_url, away_team_image_url
+
+        except Exception as e:
+            print(f"Eroare la obtinerea steagurilor de pe pagina de statistici: {e}")
+            return False
 
     def navigate_to_team_page(self, team_url):
         full_team_url = f"{self.flashscore_url}{team_url}"
@@ -293,5 +319,3 @@ class FlashscoreWebScraper:
 
 if __name__ == "__main__":
     web_scraper = FlashscoreWebScraper()
-    start_time = "02.07. 22:00"
-    web_scraper.process_start_time(start_time)

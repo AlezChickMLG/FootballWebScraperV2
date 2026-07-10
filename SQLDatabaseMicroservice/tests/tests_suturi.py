@@ -129,5 +129,39 @@ class TestsSuturi(unittest.TestCase):
             "A fost returnat un obiect de tip suturi"
         )
 
+    def test_update(self):
+        self.helper_insert_teams_and_matches()
+        self.repository.insert_suturi(self.suturi)
+
+        new_suturi = SuturiObject(
+            mid=self.match.mid,
+            team_id=self.match.home_team,
+            xG=1.98,
+            total_suturi=42
+        )
+
+        result = self.repository.update_suturi(new_suturi)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_suturi_by_id(
+            mid=new_suturi.mid,
+            team_id=new_suturi.team_id
+        )
+
+        self.assertEqual(
+            result.xG,
+            new_suturi.xG,
+            "xG diferit"
+        )
+
+        self.assertEqual(
+            result.total_suturi,
+            new_suturi.total_suturi,
+            "total suturi diferit"
+        )
+
 if __name__ == "__main__":
     unittest.main()

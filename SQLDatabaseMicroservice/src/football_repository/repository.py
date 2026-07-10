@@ -1,4 +1,5 @@
 import sqlite3
+from dataclasses import fields
 
 from football_repository.football_dataclasses.aparare_dataclass import AparareObject
 from football_repository.football_dataclasses.atac_dataclass import AtacObject
@@ -28,6 +29,7 @@ class Repository:
                 team_id TEXT PRIMARY KEY NOT NULL, 
                 team_name TEXT NOT NULL, 
                 url TEXT NOT NULL,
+                image_url TEXT,
                 
                 UNIQUE(team_name),
                 UNIQUE(url)
@@ -41,8 +43,8 @@ class Repository:
                 mid TEXT PRIMARY KEY NOT NULL,
                 home_team TEXT NOT NULL,
                 away_team TEXT NOT NULL,
-                start_time TEXT,
                 match_url TEXT NOT NULL,
+                start_time TEXT,
                 match_score TEXT NOT NULL,
                 is_played INTEGER,
                 
@@ -237,12 +239,13 @@ class Repository:
     def insert_team(self, team: Team):
         try:
             self.cursor.execute("""
-                                INSERT INTO Teams (team_id, team_name, url)
-                                VALUES (?, ?, ?)
+                                INSERT INTO Teams (team_id, team_name, url, image_url)
+                                VALUES (?, ?, ?, ?)
                                 """, (
                                     team.team_id,
                                     team.team_name,
-                                    team.url
+                                    team.url,
+                                    team.image_url
                                 ))
 
             print("Am introdus un obiect in tabela teams")
@@ -513,7 +516,8 @@ class Repository:
                 name,
             ))
 
-            return Team(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return Team(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea echipei dupa nume: {name}: {e}")
             return None
@@ -527,7 +531,8 @@ class Repository:
                 team_id,
             ))
 
-            return Team(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return Team(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea echipei dupa id: {team_id}")
             return None
@@ -541,7 +546,8 @@ class Repository:
                 mid,
             ))
 
-            return Match(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return Match(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea meciului dupa id: {mid}")
             return None
@@ -562,7 +568,8 @@ class Repository:
 
             self.cursor.execute(sql, parameters)
 
-            return list(Match(*match) for match in self.cursor.fetchall())
+            result = self.cursor.fetchall()
+            return list(Match(*match) for match in result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea meciului dupa echipe si timpul de start: {e}")
             return None
@@ -576,7 +583,8 @@ class Repository:
                 1 if is_played else 0,
             ))
 
-            return list(Match(*match) for match in self.cursor.fetchall())
+            result = self.cursor.fetchall()
+            return list(Match(*match) for match in result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea meciului dupa echipe si timpul de start: {e}")
             return None
@@ -593,7 +601,8 @@ class Repository:
                 team_id
             ))
 
-            return TopStatisticsObject(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return TopStatisticsObject(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea top statisticilor dupa id: {e}")
 
@@ -608,7 +617,8 @@ class Repository:
                 team_id
             ))
 
-            return SuturiObject(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return SuturiObject(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea suturi dupa id: {e}")
 
@@ -623,7 +633,8 @@ class Repository:
                 team_id
             ))
 
-            return PaseObject(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return PaseObject(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea pase dupa id: {e}")
 
@@ -638,7 +649,8 @@ class Repository:
                 team_id
             ))
 
-            return AparareObject(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return AparareObject(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea aparare dupa id: {e}")
 
@@ -653,7 +665,8 @@ class Repository:
                 team_id
             ))
 
-            return AtacObject(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return AtacObject(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea atac dupa id: {e}")
 
@@ -668,7 +681,8 @@ class Repository:
                 team_id
             ))
 
-            return PortarObject(*self.cursor.fetchone())
+            result = self.cursor.fetchone()
+            return PortarObject(*result) if result else None
         except Exception as e:
             print(f"Eroare la gasirea portari dupa id: {e}")
     '''FUNCTII DE SELECT'''
@@ -804,6 +818,64 @@ class Repository:
             print(f"Eroare la stergerea unui rand din portari: {e}")
             return False
 
+    '''UPDATE'''
+    def _update(self, object_to_be_updated, id_name, id_value, tabel_name):
+        try:
+            sql = f"UPDATE {tabel_name} SET "
+            updated_fields = []
+            parameters = []
+
+            for field in fields(object_to_be_updated):
+                field_value = getattr(object_to_be_updated, field.name)
+                if (field.type == str and field_value != '') or (field.type in (int, float) and field_value != -1):
+                    updated_fields.append(f"{field.name} = ?")
+                    parameters.append(field_value)
+
+
+            sql += ', '.join(updated_fields)
+            if not isinstance(id_name, list):
+                sql += f" WHERE {id_name} = ?"
+                self.cursor.execute(sql, (*parameters, id_value))
+
+            else:
+                sql += f"WHERE " + " AND ".join(f"{pk} = ?" for pk in id_name)
+                self.cursor.execute(sql, (*parameters, *id_value))
+
+            return True
+
+        except Exception as e:
+            print(f"Eroare la actualizarea tabelei {tabel_name} - id {id_value}: {e}")
+            return False
+
+    def update_team(self, team: Team):
+        return self._update(object_to_be_updated=team, id_name="team_id", id_value=team.team_id, tabel_name="Teams")
+
+    def update_match(self, match: Match):
+        return self._update(object_to_be_updated=match, id_name="mid", id_value=match.mid, tabel_name="Matches")
+
+    def update_top_statistics(self, top_statistics: TopStatisticsObject):
+        return self._update(object_to_be_updated=top_statistics, id_name=["team_id", "mid"],
+                            id_value=[top_statistics.team_id, top_statistics.mid], tabel_name="TopStatistics")
+
+    def update_suturi(self, suturi: SuturiObject):
+        return self._update(object_to_be_updated=suturi, id_name=["team_id", "mid"],
+                            id_value=[suturi.team_id, suturi.mid], tabel_name="Suturi")
+
+    def update_atac(self, atac: AtacObject):
+        return self._update(object_to_be_updated=atac, id_name=["team_id", "mid"],
+                            id_value=[atac.team_id, atac.mid], tabel_name="Atac")
+
+    def update_pase(self, pase: PaseObject):
+        return self._update(object_to_be_updated=pase, id_name=["team_id", "mid"],
+                            id_value=[pase.team_id, pase.mid], tabel_name="Pase")
+    
+    def update_aparare(self, aparare: AparareObject):
+        return self._update(object_to_be_updated=aparare, id_name=["team_id", "mid"],
+                            id_value=[aparare.team_id, aparare.mid], tabel_name="Aparare")
+
+    def update_portar(self, portar: PortarObject):
+        return self._update(object_to_be_updated=portar, id_name=["team_id", "mid"],
+                            id_value=[portar.team_id, portar.mid], tabel_name="Portari")
 
 if __name__ == "__main__":
     repository = Repository()

@@ -125,6 +125,40 @@ class TestsAtac(unittest.TestCase):
             "A fost returnat un obiect de tip atac"
         )
 
+    def test_update(self):
+        self.helper_insert_teams_and_matches()
+        self.repository.insert_atac(self.atac)
+
+        new_atac = AtacObject(
+            mid=self.match.mid,
+            team_id=self.match.home_team,
+            pase_filtrante_reusite=4,
+            cornere=14
+        )
+
+        result = self.repository.update_atac(new_atac)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_atac_by_id(
+            mid=new_atac.mid,
+            team_id=new_atac.team_id
+        )
+
+        self.assertEqual(
+            result.cornere,
+            new_atac.cornere,
+            "cornere diferit"
+        )
+
+        self.assertEqual(
+            result.pase_filtrante_reusite,
+            new_atac.pase_filtrante_reusite,
+            "pase filtrante reusite diferite"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

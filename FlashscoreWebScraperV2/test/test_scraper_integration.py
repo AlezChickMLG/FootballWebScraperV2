@@ -128,7 +128,7 @@ class TestIntegrationWebScraper(unittest.TestCase):
         self.assertEqual(expected_url, self.scraper.page.url)
 
     '''Helper functions'''
-    def navigate_to_team_page_results(self):
+    def helper_navigate_to_team_page_results(self):
         team_url = self.scraper.get_team_url(self.test_team)
 
         self.scraper.navigate_to_team_page(team_url)
@@ -140,8 +140,8 @@ class TestIntegrationWebScraper(unittest.TestCase):
 
         self.scraper.navigate_to_results_page()
 
-    def navigate_to_match_statistics(self):
-        self.navigate_to_team_page_results()
+    def helper_navigate_to_match_statistics(self):
+        self.helper_navigate_to_team_page_results()
 
         match_url = "https://www.flashscore.ro/meci/fotbal/spania-bLyo6mco/uruguay-xMk44orG/?mid=8xM154oS"
         self.scraper.navigate_to_match_page(match_url)
@@ -183,12 +183,45 @@ class TestIntegrationWebScraper(unittest.TestCase):
         self.helper_test_get_all_matches(time_limit)
 
     def test_get_all_statistics_correct(self):
-        self.navigate_to_match_statistics()
+        self.helper_navigate_to_match_statistics()
         statistics = self.scraper.get_statistics()
 
         self.assertIsNotNone(statistics)
         self.assertIsInstance(statistics, dict)
         self.assertGreater(len(statistics), 0)
+
+    def test_get_flags_from_statistics_page(self):
+        self.helper_navigate_to_match_statistics()
+
+        home_team_image_url, away_team_image_url = self.scraper.get_team_flags_from_statistics()
+        self.assertIsNotNone(home_team_image_url, "home url gol")
+        self.assertIsNotNone(away_team_image_url, "away url gol")
+
+        self.assertTrue(home_team_image_url != False, "Eroare la home url")
+        self.assertTrue(away_team_image_url != False, "Eroare la away url")
+
+        self.assertTrue(home_team_image_url.startswith('https://static.flashscore.com/res/image/data/'), "home link gresit")
+        self.assertTrue(away_team_image_url.startswith('https://static.flashscore.com/res/image/data/'), "away link gresit")
+
+        self.assertTrue(home_team_image_url.endswith('png'), "home format gresit")
+        self.assertTrue(away_team_image_url.endswith('png'), "away format gresit")
+
+    def test_get_flags_from_statistics_page_with_match_url(self):
+        match_url = "https://www.flashscore.ro/meci/fotbal/spania-bLyo6mco/uruguay-xMk44orG/?mid=8xM154oS"
+
+        home_team_image_url, away_team_image_url = self.scraper.get_team_flags_from_statistics(match_url=match_url)
+        self.assertIsNotNone(home_team_image_url, "home url gol")
+        self.assertIsNotNone(away_team_image_url, "away url gol")
+
+        self.assertTrue(home_team_image_url != False, "Eroare la home url")
+        self.assertTrue(away_team_image_url != False, "Eroare la away url")
+
+        self.assertTrue(home_team_image_url.startswith('https://static.flashscore.com/res/image/data/'), "home link gresit")
+        self.assertTrue(away_team_image_url.startswith('https://static.flashscore.com/res/image/data/'), "away link gresit")
+
+        self.assertTrue(home_team_image_url.endswith('png'), "home format gresit")
+        self.assertTrue(away_team_image_url.endswith('png'), "away format gresit")
+
 
 if __name__ == "__main__":
     unittest.main()

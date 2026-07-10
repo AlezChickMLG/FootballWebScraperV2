@@ -21,6 +21,12 @@ class TestsMatches(unittest.TestCase):
             url="another_url"
         )
 
+        self.other_team = Team(
+            team_id="123",
+            team_name="USA",
+            url="other_url"
+        )
+
         self.match = Match(
             mid="123",
             home_team="abcdef",
@@ -221,6 +227,41 @@ class TestsMatches(unittest.TestCase):
             result,
             "A fost returnat un meci"
         )
+
+    def test_update_matches(self):
+        self.helper_insert_teams_and_match()
+        self.repository.insert_team(self.other_team)
+
+        new_match = Match(
+            mid=self.match.mid,
+            home_team=self.other_team.team_id,
+            match_url="instagram_bucifer.ro",
+            start_time="ieri la ceai"
+        )
+
+        result = self.repository.update_match(new_match)
+        self.assertTrue(
+            result,
+            "Eroare la update"
+        )
+
+        result = self.repository.get_match_by_id(self.match.mid)
+        self.assertEqual(
+            result.home_team,
+            new_match.home_team,
+            "Echipe diferite"
+        )
+        self.assertEqual(
+            result.start_time,
+            new_match.start_time,
+            "Start time diferit"
+        )
+        self.assertEqual(
+            result.match_url,
+            new_match.match_url,
+            "Echipe diferite"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -128,6 +128,40 @@ class TestsAparare(unittest.TestCase):
             "A fost returnat un obiect de tip aparare"
         )
 
+    def test_update(self):
+        self.helper_insert_teams_and_matches()
+        self.repository.insert_aparare(self.aparare)
+
+        new_aparare = AparareObject(
+            mid=self.match.mid,
+            team_id=self.match.home_team,
+            deposedari_totale=34,
+            deposedari_procentaj=98
+        )
+
+        result = self.repository.update_aparare(new_aparare)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_aparare_by_id(
+            mid=new_aparare.mid,
+            team_id=new_aparare.team_id
+        )
+
+        self.assertEqual(
+            result.deposedari_totale,
+            new_aparare.deposedari_totale,
+            "deposedari totale diferite"
+        )
+
+        self.assertEqual(
+            result.deposedari_procentaj,
+            new_aparare.deposedari_procentaj,
+            "deposedari reusite diferite"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

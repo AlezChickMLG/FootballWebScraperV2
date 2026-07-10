@@ -130,5 +130,39 @@ class TestsTopStatistics(unittest.TestCase):
             "A fost returnat un obiect de tip top_statistics"
         )
 
+    def test_update(self):
+        self.helper_insert_teams_and_matches()
+        self.repository.insert_top_statistic(self.top_statistics)
+
+        new_top_statistics = TopStatisticsObject(
+            mid=self.match.mid,
+            team_id=self.match.home_team,
+            xG=1.98,
+            total_suturi=42
+        )
+
+        result = self.repository.update_top_statistics(new_top_statistics)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_top_statistics_by_id(
+            mid=new_top_statistics.mid,
+            team_id=new_top_statistics.team_id
+        )
+
+        self.assertEqual(
+            result.xG,
+            new_top_statistics.xG,
+            "xG diferit"
+        )
+
+        self.assertEqual(
+            result.total_suturi,
+            new_top_statistics.total_suturi,
+            "total suturi diferit"
+        )
+
 if __name__ == "__main__":
     unittest.main()

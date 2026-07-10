@@ -204,11 +204,11 @@ class ProxyTestCase(unittest.TestCase):
         result = self.proxy.repository.insert_match(self.not_played_match)
         self.assertTrue(result, True)
 
-    def test_scan_matches(self):
+    def test_get_statistics(self):
         self.proxy.flashscore_web_scraper.get_statistics.return_value = self.stats
         self.helper_insert_teams_and_matches()
 
-        statistics = self.proxy.scan_matches_for_statistics([self.match, self.another_match])
+        statistics = self.proxy.get_statistics([self.match, self.another_match])
         self.assertIsInstance(statistics, dict, "Colectie gresita")
         self.assertTrue(len(statistics.keys()) == 2, "Numar diferit de meciuri")
 

@@ -133,6 +133,40 @@ class TestsPase(unittest.TestCase):
             "A fost returnat un obiect de tip pase"
         )
 
+    def test_update(self):
+        self.helper_insert_teams_and_matches()
+        self.repository.insert_pase(self.pase)
+
+        new_pase = PaseObject(
+            mid=self.match.mid,
+            team_id=self.match.home_team,
+            pase_totale=551,
+            pase_reusite=498
+        )
+
+        result = self.repository.update_pase(new_pase)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_pase_by_id(
+            mid=new_pase.mid,
+            team_id=new_pase.team_id
+        )
+
+        self.assertEqual(
+            result.pase_totale,
+            new_pase.pase_totale,
+            "pase totale diferite"
+        )
+
+        self.assertEqual(
+            result.pase_reusite,
+            new_pase.pase_reusite,
+            "pase reusite diferiteW"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

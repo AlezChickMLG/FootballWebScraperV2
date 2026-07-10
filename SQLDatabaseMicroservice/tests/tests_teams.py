@@ -112,5 +112,55 @@ class TestsTeams(unittest.TestCase):
             "A returnat un obiect desi nu trebuia"
         )
 
+    def test_update(self):
+        self.repository.insert_team(self.team)
+
+        self.team.team_name = "Germania"
+        result = self.repository.update_team(self.team)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_team_by_id(team_id=self.team.team_id)
+        self.assertEqual(
+            result,
+            self.team,
+            "Echipe diferite"
+        )
+
+    def test_update_few_fields(self):
+        self.repository.insert_team(self.team)
+
+        new_team = Team(
+            team_id=self.team.team_id,
+            team_name="Germania",
+            url="instabuci.ro"
+        )
+
+        result = self.repository.update_team(new_team)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_team_by_id(team_id=self.team.team_id)
+        self.assertEqual(
+            result.team_id,
+            self.team.team_id,
+            "Echipe diferite"
+        )
+        self.assertEqual(
+            result.team_name,
+            new_team.team_name,
+            "Nume diferite"
+        )
+        self.assertEqual(
+            result.url,
+            new_team.url,
+            "URL-uri diferite"
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

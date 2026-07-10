@@ -98,7 +98,7 @@ class TestsPortari(unittest.TestCase):
             "Am putut insera o statistica pentru un meci existent pentru o echipa existenta"
         )
 
-    def test_get_suturi(self):
+    def test_get_portar(self):
         self.helper_insert_teams_and_matches()
         self.repository.insert_portar(self.portar)
 
@@ -107,6 +107,40 @@ class TestsPortari(unittest.TestCase):
         self.assertIsNotNone(portar, "A fost returnat un None")
         self.assertIsInstance(portar, PortarObject, "A fost returnat un tip gresit de obiect")
         self.assertEqual(portar, self.portar, "A fost returnat obiectul gresit")
+
+    def test_update(self):
+        self.helper_insert_teams_and_matches()
+        self.repository.insert_portar(self.portar)
+
+        new_portar = PortarObject(
+            mid=self.match.mid,
+            team_id=self.match.home_team,
+            interventii_portar=4,
+            xGOT_impotriva=3.45
+        )
+
+        result = self.repository.update_portar(new_portar)
+        self.assertTrue(
+            result,
+            "Update eronat"
+        )
+
+        result = self.repository.get_portari_by_id(
+            mid=new_portar.mid,
+            team_id=new_portar.team_id
+        )
+
+        self.assertEqual(
+            result.interventii_portar,
+            new_portar.interventii_portar,
+            "interventii portar diferite"
+        )
+
+        self.assertEqual(
+            result.xGOT_impotriva,
+            new_portar.xGOT_impotriva,
+            "xGOT_impotriva diferit"
+        )
 
 if __name__ == "__main__":
     unittest.main()
