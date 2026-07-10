@@ -11,7 +11,8 @@ class TestsTeams(unittest.TestCase):
         self.team = Team(
             team_id="abcdef",
             team_name="Mexic",
-            url="some_url"
+            url="some_url",
+            image_url="alabala.portocala"
         )
 
         self.another_team = Team(

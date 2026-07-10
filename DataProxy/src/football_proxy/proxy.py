@@ -3,6 +3,7 @@ from football_repository.football_dataclasses.atac_dataclass import AtacObject
 from football_repository.football_dataclasses.pase_dataclass import PaseObject
 from football_repository.football_dataclasses.portar_dataclass import PortarObject
 from football_repository.football_dataclasses.suturi_dataclass import SuturiObject
+from football_repository.football_dataclasses.teams_dataclass import Team
 from football_repository.football_dataclasses.topStatistics_dataclass import TopStatisticsObject
 from football_repository.frozen_football_dataclasses.frozen_matches_dataclass import MatchFrozen
 from football_repository.frozen_football_dataclasses.frozen_teams_dataclass import TeamFrozen
@@ -13,10 +14,10 @@ from football_repository.football_dataclasses.matches_dataclass import Match
 from football_scraper.data_processor import DataProcessor
 
 class Proxy:
-    def __init__(self, headless=True):
+    def __init__(self, headless=True, database_name="football_database"):
         self.flashscore_web_scraper = FlashscoreWebScraper(headless)
         self.data_processor = DataProcessor()
-        self.repository = Repository()
+        self.repository = Repository(database_name)
 
     def get_team(self, team_name):
         formatted_team = self.repository.get_team_by_name(team_name)
@@ -86,8 +87,25 @@ class Proxy:
                         # obtinem statisticile
                         raw_statistics = self.flashscore_web_scraper.get_statistics(match_url=match.match_url)
 
-                        #obtinem imaginile echipelor
+                        # obtinem imaginile echipelor
                         home_team_image_url, away_team_image_url = self.flashscore_web_scraper.get_team_flags_from_statistics()
+
+                        # actualizam echipele cu url-uri pentru imagini
+                        #home team
+                        self.repository.update_team(
+                            Team(
+                                team_id=match.home_team,
+                                image_url = home_team_image_url
+                            )
+                        )
+
+                        #away team
+                        self.repository.update_team(
+                            Team(
+                                team_id=match.away_team,
+                                image_url = away_team_image_url
+                            )
+                        )
 
                         # formatam statisticile
                         formatted_statistics = self.data_processor.process_statistics(mid=match.mid,

@@ -155,16 +155,25 @@ class DataProcessor:
             print(f"Eroare la formatarea statisticilor: {e}")
             return False
 
+    def format_team_name(self, team_name):
+        return team_name.lower().translate(str.maketrans({
+                                "ă": "a",
+                                "â": "a",
+                                "î": "i",
+                                "ș": "s",
+                                "ț": "t"
+                            })).replace("-", " ").title()
+
     def format_team_object_from_url(self, team_name, team_url):
         return Team(
             team_id=team_url.split(':')[-1],
-            team_name=team_name,
+            team_name=self.format_team_name(team_name),
             url=f"https://www.flashscore.ro/echipa/{team_name.lower().replace(' ', '-')}/{team_url.split(':')[-1]}"
         )
 
     def format_team_object_from_id(self, team_name, team_id):
         return Team(
             team_id=team_id,
-            team_name=team_name,
+            team_name=self.format_team_name(team_name),
             url=f"https://www.flashscore.ro/echipa/{team_name.lower().replace(' ', '-')}/{team_id}"
         )
