@@ -13,7 +13,7 @@ from football_repository.football_dataclasses.topStatistics_dataclass import Top
 
 class Repository:
     def __init__(self, database_name="football_database"):
-        self.database_connection = sqlite3.connect(database_name)
+        self.database_connection = sqlite3.connect(database_name, check_same_thread=False)
         self.database_connection.execute("PRAGMA foreign_keys = ON")
         self.cursor = self.database_connection.cursor()
         self.create_all_tables()
@@ -552,28 +552,36 @@ class Repository:
             print(f"Eroare la gasirea meciului dupa id: {mid}")
             return None
 
-    def get_match_by_details(self, home_team, away_team=None, start_time=None):
+    def get_match_by_details(self, home_team=None, away_team=None, start_time=None):
         try:
-            sql = '''SELECT * FROM Matches
-                  WHERE home_team = ?'''
-            parameters = [home_team]
+            conditions = []
+            parameters = []
+
+            if home_team:
+                conditions.append("home_team = ?")
+                parameters.append(home_team)
 
             if away_team:
-                sql += ''' AND away_team = ?'''
+                conditions.append("away_team = ?")
                 parameters.append(away_team)
 
             if start_time:
-                sql += ''' AND start_time = ?'''
+                conditions.append("start_time = ?")
                 parameters.append(start_time)
+
+            if not conditions:
+                return None
+
+            sql = f"SELECT * FROM Matches WHERE {' AND '.join(conditions)}"
 
             self.cursor.execute(sql, parameters)
 
             result = self.cursor.fetchall()
             return list(Match(*match) for match in result) if result else None
+
         except Exception as e:
             print(f"Eroare la gasirea meciului dupa echipe si timpul de start: {e}")
             return None
-
     def get_matches_by_is_played(self, is_played=True):
         try:
             sql = '''SELECT * FROM Matches

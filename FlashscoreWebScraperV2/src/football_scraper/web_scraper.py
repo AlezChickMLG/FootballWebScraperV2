@@ -5,6 +5,9 @@ from pprint import pprint
 from datetime import datetime
 from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
 
+from football_scraper.data_processor import DataProcessor
+
+
 def reset_decorator(func):
     def wrapper(self, *args, **kwargs):
         self.reset_page()
@@ -23,6 +26,8 @@ class FlashscoreWebScraper:
 
         self.flashscore_url = "https://www.flashscore.ro/"
         self.flashscore_url_no_slash = "https://www.flashscore.ro"
+
+        self.data_processor = DataProcessor()
 
         #Incarcare pagina principala
         self.page.goto(self.flashscore_url)
@@ -117,6 +122,15 @@ class FlashscoreWebScraper:
                     "match_url" : match_url
                 }
 
+                if start_time_element:
+                    start_time = start_time_element.inner_text()
+                    formatted_start_time, string_start_time = self.data_processor.process_start_time(start_time)
+                    match_dict["start_time"] = string_start_time
+
+                    if time_limit:
+                        if formatted_start_time < time_limit:
+                            break
+
                 if home_team_element:
                     home_team = home_team_element.inner_text()
                     match_dict["home_team"] = home_team
@@ -125,14 +139,10 @@ class FlashscoreWebScraper:
                     away_team = away_team_element.inner_text()
                     match_dict["away_team"] = away_team
 
-                if start_time_element:
-                    start_time = start_time_element.inner_text()
-                    formatted_start_time, string_start_time = self.process_start_time(start_time)
-                    match_dict["start_time"] = string_start_time
-
-                    if time_limit:
-                        if formatted_start_time < time_limit:
-                            break
+                home_team_image_url, away_team_image_url = [element.get_attribute("src") for element in match.query_selector_all("img[data-testid=wcl-participantLogo]")]
+                if home_team_image_url and away_team_image_url:
+                    match_dict["home_team_image_url"] = home_team_image_url
+                    match_dict['away_team_image_url'] = away_team_image_url
 
                 matches_dict.append(match_dict)
 
@@ -242,21 +252,6 @@ class FlashscoreWebScraper:
         button_href = statistics_button.get_attribute("href")
         self.page.goto(f"{self.flashscore_url_no_slash}{button_href}")
         print("Am ajuns pe pagina de statistici")
-
-    def process_start_time(self, start_time):
-        try:
-            start_time = start_time.split("\n")[0]
-            formatted_start_time = datetime.strptime(start_time, "%d.%m.%Y")
-            return formatted_start_time, start_time
-        except ValueError:
-            try:
-                hour_start_time = datetime.strptime(start_time, "%d.%m. %H:%M")
-                hour_start_time = hour_start_time.replace(year=datetime.now().year)
-                return hour_start_time, hour_start_time.strftime("%d.%m.%Y")
-            except ValueError:
-                print("Format necunoscut")
-
-
 
     def process_info(self, info, limit=10):
         team_name = info["team"]

@@ -114,6 +114,12 @@ class IntegrationProxy(unittest.TestCase):
             },
         }
 
+    def test_get_team_incorrect(self):
+        test_team = "Cimpanzeii"
+        team = self.proxy.get_team(test_team)
+
+        self.assertTrue(team is None or team is False, "A returnat o echipa inexistenta")
+
     def test_get_team_scraper(self):
         test_team = "Germania"
         team = self.proxy.get_team(test_team)
@@ -136,12 +142,12 @@ class IntegrationProxy(unittest.TestCase):
         self.assertIsInstance(proxy_team, Team, "Obiect de tip gresit")
         self.assertEqual(self.team, proxy_team, "Echipa diferite")
 
-    def test_get_matches_scraper(self):
+    def test_get_all_matches_scraper(self):
         try:
-            team = self.proxy.get_team(team_name="Norvegia")
+            team = self.proxy.get_team(team_name="Spania")
             self.assertIsNotNone(team)
 
-            matches = self.proxy.get_matches(home_team_name="Norvegia", home_team_id=team.team_id)
+            matches = self.proxy.get_matches(team_name="Spania", team_id=team.team_id)
             self.assertIsNotNone(matches)
 
             for match in matches:
@@ -149,6 +155,24 @@ class IntegrationProxy(unittest.TestCase):
                 #self.assertIsNotNone(self.proxy.repository.get_team_by_name(match['away_team'].team_name), f"Echipa {match['away_team'].team_name} nu exista in baza de date")
                 self.assertIsNotNone(self.proxy.repository.get_match_by_id(match.mid),
                                      f"Meciul {match.mid} nu exista in baza de date")
+        except Exception as e:
+            print(f"Eroare la test: {e}")
+
+    def test_get_all_matches_database(self):
+        try:
+            team = self.proxy.get_team(team_name="Norvegia")
+            self.assertIsNotNone(team)
+
+            matches = self.proxy.get_matches(team_name="Norvegia", team_id=team.team_id)
+            self.assertIsNotNone(matches)
+
+            for match in matches:
+                self.assertIsNotNone(self.proxy.repository.get_match_by_id(match.mid),
+                                     f"Meciul {match.mid} nu exista in baza de date")
+
+            database_matches = self.proxy.get_matches(team_name="Norvegia", team_id=team.team_id)
+            self.assertEqual(len(matches), len(database_matches), "Lista de meciuri diferite")
+
         except Exception as e:
             print(f"Eroare la test: {e}")
 

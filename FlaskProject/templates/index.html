@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meciuri</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
+    <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
+</head>
+<body>
+    <div class="wrap">
+        <div class="search-row">
+            <input type="text" id="find_button" placeholder="Caută echipă..." />
+            <button onclick="searchMatches()">Cauta</button>
+        </div>
+
+        <div class="matches" id="list">
+        </div>
+    </div>
+</body>
+</html>

@@ -14,6 +14,9 @@ src/football_repository/football_dataclasses/portar_dataclass.py
 src/football_repository/football_dataclasses/suturi_dataclass.py
 src/football_repository/football_dataclasses/teams_dataclass.py
 src/football_repository/football_dataclasses/topStatistics_dataclass.py
+src/football_repository/frozen_football_dataclasses/__init__.py
+src/football_repository/frozen_football_dataclasses/frozen_matches_dataclass.py
+src/football_repository/frozen_football_dataclasses/frozen_teams_dataclass.py
 tests/test_runner.py
 tests/tests_aparare.py
 tests/tests_atac.py
@@ -23,3 +26,4 @@ tests/tests_portari.py
 tests/tests_suturi.py
 tests/tests_tables.py
 tests/tests_teams.py
+tests/tests_top_statistics.py

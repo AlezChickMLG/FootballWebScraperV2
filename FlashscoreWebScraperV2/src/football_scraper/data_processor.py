@@ -8,7 +8,7 @@ from football_repository.football_dataclasses.topStatistics_dataclass import Top
 from football_repository.football_dataclasses.suturi_dataclass import SuturiObject
 
 from dataclasses import fields
-
+from datetime import datetime
 
 class DataProcessor:
     def __init__(self):
@@ -21,13 +21,27 @@ class DataProcessor:
         formatted_matches = []
         for match in matches:
             try:
-                home_team, away_team, mid = match['match_url'].split("/")[-3:]
+                first_team, second_team, mid = match['match_url'].split("/")[-3:]
 
-                home_team_name, home_team_id = home_team.rsplit("-", maxsplit=1)
-                formatted_home_team = self.format_team_object_from_id(team_name=home_team_name, team_id=home_team_id)
+                first_team_name, first_team_id = first_team.rsplit("-", maxsplit=1)
+                formatted_first_team = self.format_team_object_from_id(team_name=first_team_name, team_id=first_team_id, team_image_url=match['home_team_image_url'])
 
-                away_team_name, away_team_id = away_team.rsplit("-", maxsplit=1)
-                formatted_away_team = self.format_team_object_from_id(team_name=away_team_name, team_id=away_team_id)
+                second_team_name, second_team_id = second_team.rsplit("-", maxsplit=1)
+                formatted_second_team = self.format_team_object_from_id(team_name=second_team_name, team_id=second_team_id, team_image_url=match['away_team_image_url'])
+
+                if formatted_first_team.team_name == match['home_team']:
+                    formatted_home_team = formatted_first_team
+                    formatted_away_team = formatted_second_team
+
+                else:
+                    formatted_home_team = formatted_second_team
+                    formatted_away_team = formatted_first_team
+
+                home_team_id = formatted_home_team.team_id
+                formatted_home_team.image_url = match['home_team_image_url']
+
+                away_team_id = formatted_away_team.team_id
+                formatted_away_team.image_url = match['away_team_image_url']
 
                 mid = mid.split("=")[-1]
                 formatted_match = Match(
@@ -48,6 +62,19 @@ class DataProcessor:
             except Exception as e:
                 print(f"Eroare la formatarea: {match}")
         return formatted_matches
+
+    def process_start_time(self, start_time):
+        try:
+            start_time = start_time.split("\n")[0]
+            formatted_start_time = datetime.strptime(start_time, "%d.%m.%Y")
+            return formatted_start_time, start_time
+        except ValueError:
+            try:
+                hour_start_time = datetime.strptime(start_time, "%d.%m. %H:%M")
+                hour_start_time = hour_start_time.replace(year=datetime.now().year)
+                return hour_start_time, hour_start_time.strftime("%d.%m.%Y")
+            except ValueError:
+                print("Format necunoscut")
 
     def process_statistics(self, mid, home_team_id, away_team_id, statistics):
         try:
@@ -164,16 +191,18 @@ class DataProcessor:
                                 "ț": "t"
                             })).replace("-", " ").title()
 
-    def format_team_object_from_url(self, team_name, team_url):
+    def format_team_object_from_url(self, team_name, team_url, team_image_url=''):
         return Team(
             team_id=team_url.split(':')[-1],
             team_name=self.format_team_name(team_name),
-            url=f"https://www.flashscore.ro/echipa/{team_name.lower().replace(' ', '-')}/{team_url.split(':')[-1]}"
+            url=f"https://www.flashscore.ro/echipa/{team_name.lower().replace(' ', '-')}/{team_url.split(':')[-1]}",
+            image_url=team_image_url
         )
 
-    def format_team_object_from_id(self, team_name, team_id):
+    def format_team_object_from_id(self, team_name, team_id, team_image_url=''):
         return Team(
             team_id=team_id,
             team_name=self.format_team_name(team_name),
-            url=f"https://www.flashscore.ro/echipa/{team_name.lower().replace(' ', '-')}/{team_id}"
+            url=f"https://www.flashscore.ro/echipa/{team_name.lower().replace(' ', '-')}/{team_id}",
+            image_url=team_image_url
         )

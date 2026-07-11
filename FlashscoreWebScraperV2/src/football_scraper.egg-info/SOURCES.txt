@@ -1,12 +1,15 @@
 pyproject.toml
+src/decorators/__init__.py
+src/decorators/flashscore_scraper_decorators.py
 src/football_scraper/__init__.py
-src/football_scraper/old_web_scraper.py
-src/football_scraper/request_component.py
+src/football_scraper/data_processor.py
 src/football_scraper/web_scraper.py
 src/football_scraper.egg-info/PKG-INFO
 src/football_scraper.egg-info/SOURCES.txt
 src/football_scraper.egg-info/dependency_links.txt
 src/football_scraper.egg-info/requires.txt
 src/football_scraper.egg-info/top_level.txt
+test/test_data_processor_integration.py
+test/test_data_processor_unit.py
 test/test_scraper_integration.py
 test/test_scraper_unit.py

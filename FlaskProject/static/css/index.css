@@ -1,0 +1,103 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: sans-serif;
+    background: #f5f0e8;
+    min-height: 100vh;
+}
+
+.wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+}
+
+.search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+}
+
+.search-row input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid #c8b89a;
+    border-radius: 8px;
+    background: #fffdf8;
+    font-size: 14px;
+    color: #2c2c2a;
+    outline: none;
+}
+
+.search-row input:focus {
+    border-color: #8B6F47;
+}
+
+.search-row button {
+    padding: 9px 16px;
+    background: #8B6F47;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.search-row button:hover {
+    background: #7a5f3a;
+}
+
+.matches {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card {
+    background: #fffdf8;
+    border: 1px solid #d4c4a8;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+}
+
+.team-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+
+.team-block.away {
+    align-items: flex-end;
+}
+
+.flag {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.tname {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2c2c2a;
+}
+
+.trole {
+    font-size: 11px;
+    color: #a0876a;
+}
+
+.vs {
+    font-size: 13px;
+    font-weight: 500;
+    color: #c8b89a;
+    text-align: center;
+}
