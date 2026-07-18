@@ -9,3 +9,4 @@ class Match:
     start_time: str=""
     match_score: str=""
     is_played: int=1
+    competition_id: str=None

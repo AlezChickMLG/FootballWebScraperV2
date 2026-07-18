@@ -2,14 +2,16 @@ import sys, os
 import unittest
 from datetime import datetime
 
+from football_scraper.NameNormalizer.NameNormalizer import NameNormalizer
 # adaugi radacina proiectului la path
 
-from src.football_scraper.web_scraper import FlashscoreWebScraper
+from football_scraper.web_scraper import FlashscoreWebScraper
 
 class TestIntegrationWebScraper(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.scraper = FlashscoreWebScraper(headless=False)
+        cls.name_normalizer = NameNormalizer()
 
     @classmethod
     def tearDownClass(cls):
@@ -66,6 +68,15 @@ class TestIntegrationWebScraper(unittest.TestCase):
         self.scraper.navigate_to_team_page(team_url)
 
         self.assertEqual(expected_url, self.scraper.page.url)
+
+    def test_navigate_to_competition_page(self):
+        expected_url = "https://www.flashscore.ro/fotbal/romania/superliga"
+        test_competition = "Superliga"
+
+        team_url = self.scraper.get_team_url(test_competition)
+        self.scraper.navigate_to_team_page(team_url)
+
+        self.assertTrue(self.scraper.get_page_url().startswith(expected_url), self.scraper.page.url)
 
     def test_navigate_to_team_page_by_id(self):
         expected_url = "https://www.flashscore.ro/echipa/capul-verde/MocyWdm7/"
@@ -147,7 +158,70 @@ class TestIntegrationWebScraper(unittest.TestCase):
         self.scraper.navigate_to_match_page(match_url)
 
         self.scraper.navigate_to_statistics_tab()
+
+    def helper_navigate_to_competition_page(self, test_competition):
+        competition_url = self.scraper.get_team_url(test_competition)
+        self.scraper.navigate_to_competition_page(competition_url)
     '''Helper functions'''
+
+    def test_scrape_competition_country(self):
+        test_competition = "Superliga"
+
+        self.helper_navigate_to_competition_page(test_competition)
+
+        country_name = self.scraper._scrape_country_name()
+        sanitized_country_name = self.name_normalizer.normalize_object_name(country_name)
+
+        expected_country_name = "Romania"
+
+        self.assertEqual(
+            sanitized_country_name,
+            expected_country_name,
+            "Error: Different country names"
+        )
+
+    def test_scrape_competition_image_url(self):
+        test_competition = "Superliga"
+
+        self.helper_navigate_to_competition_page(test_competition)
+
+        competition_image_url = self.scraper._scrape_competition_image_url()
+        expected_starting_url = "https://static.flashscore.com/res/image/data"
+
+        self.assertTrue(
+            competition_image_url.startswith(expected_starting_url),
+            "Error: Different starting substring"
+        )
+
+        self.assertTrue(
+            competition_image_url.endswith("png"),
+            "Error: Different extension"
+        )
+
+    def test_scrape_competition_dictionary(self):
+        test_competition = "Superliga"
+        competition_dict = self.scraper.scrape_competition_by_name(test_competition)
+
+        sanitized_country_name = self.name_normalizer.normalize_object_name(competition_dict['country'])
+        expected_country_name = "Romania"
+
+        self.assertEqual(
+            sanitized_country_name,
+            expected_country_name,
+            "Error: Different country names"
+        )
+
+        expected_starting_url = "https://static.flashscore.com/res/image/data"
+
+        self.assertTrue(
+            competition_dict['competition_image_url'].startswith(expected_starting_url),
+            "Error: Different starting substring"
+        )
+
+        self.assertTrue(
+            competition_dict['competition_image_url'].endswith("png"),
+            "Error: Different extension"
+        )
 
     def helper_test_get_all_matches(self, time_limit=None):
         team_url = self.scraper.get_team_url(self.test_team)

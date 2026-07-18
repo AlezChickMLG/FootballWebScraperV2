@@ -1,6 +1,7 @@
 import unittest
 
 from football_repository.football_dataclasses.atac_dataclass import AtacObject
+from football_repository.football_dataclasses.competition_dataclass import Competition
 from football_repository.football_dataclasses.matches_dataclass import Match
 from football_repository.football_dataclasses.pase_dataclass import PaseObject
 from football_repository.football_dataclasses.portar_dataclass import PortarObject
@@ -110,6 +111,21 @@ class MyTestCase(unittest.TestCase):
             self.assertIn(TopStatisticsObject, all_classes,
                           f"Nu a fost gasita un obiect de tip TopStatisticsObject in lista")
 
+    def test_get_competition_object_from_full_url(self):
+        full_url = "https://www.flashscore.ro/fotbal/romania/superliga/#/pOcTEGTq/clasament-live/"
+        competition_name = "Superliga"
+
+        competition = self.data_processor.format_competition_object_from_full_url(competition_name=competition_name,
+                                                                                  competition_url=full_url)
+
+        self.assertIsNotNone(competition,
+                             "Error: None competition object")
+
+        self.assertIsInstance(
+            competition,
+            Competition,
+            "Error: Different object instance"
+        )
 
 if __name__ == '__main__':
     unittest.main()

@@ -39,16 +39,42 @@ body {
 
 .search-row button {
     padding: 9px 16px;
-    background: #8B6F47;
-    color: #fff;
     border: none;
     border-radius: 8px;
     font-size: 13px;
     cursor: pointer;
+    white-space: nowrap;
 }
 
-.search-row button:hover {
+/* Butonul principal: Caută */
+.search-row button:first-of-type {
+    background: #8B6F47;
+    color: #fff;
+}
+
+.search-row button:first-of-type:hover {
     background: #7a5f3a;
+}
+
+/* Butonul secundar: Scanează */
+.search-row button:last-of-type {
+    background: transparent;
+    color: #8B6F47;
+    border: 1px solid #c8b89a;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.search-row button:last-of-type:hover {
+    background: #efe6d6;
+    border-color: #8B6F47;
+}
+
+.search-row button:last-of-type::before {
+    content: "⟳";
+    font-size: 15px;
+    line-height: 1;
 }
 
 .matches {
@@ -96,8 +122,114 @@ body {
 }
 
 .vs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 70px;
+}
+
+.vs-label {
     font-size: 13px;
     font-weight: 500;
     color: #c8b89a;
+}
+
+.score {
+    font-size: 20px;
+    font-weight: 600;
+    color: #5c4a2a;
+    letter-spacing: 2px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.start_time {
+    font-size: 11px;
+    color: #a0876a;
+    white-space: nowrap;
+}
+
+/* Butonul de statistici — ocupă toată lățimea sub meci */
+.statistics-button {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+}
+
+.statistics-button button {
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    color: #8B6F47;
+    border: 1px solid #d4c4a8;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.statistics-button button:hover {
+    background: #efe6d6;
+    border-color: #8B6F47;
+}
+
+/* Containerul de statistici — ascuns implicit */
+.statistics-container {
+    grid-column: 1 / -1;
+    display: none;
+}
+
+.statistics-container.open {
+    display: block;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e8dcc8;
+}
+
+.stat-category {
+    margin-bottom: 14px;
+}
+
+.stat-category-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8B6F47;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
     text-align: center;
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.stat-home {
+    text-align: right;
+    font-weight: 600;
+    color: #2c2c2a;
+}
+
+.stat-away {
+    text-align: left;
+    font-weight: 600;
+    color: #2c2c2a;
+}
+
+.stat-name {
+    text-align: center;
+    color: #a0876a;
+    font-size: 12px;
+}
+
+.stats-error {
+    text-align: center;
+    color: #a0876a;
+    font-size: 13px;
+    padding: 8px 0;
 }

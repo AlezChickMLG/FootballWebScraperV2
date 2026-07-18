@@ -1,5 +1,6 @@
 import unittest
 
+from football_repository.football_dataclasses.competition_dataclass import Competition
 from football_repository.football_dataclasses.matches_dataclass import Match
 from football_repository.football_dataclasses.teams_dataclass import Team
 from football_repository.repository import Repository
@@ -27,6 +28,13 @@ class TestsMatches(unittest.TestCase):
             url="other_url"
         )
 
+        self.competition = Competition(
+            id="c123",
+            country="Romania",
+            competition_name="Superliga",
+            url="fotbal/superliga"
+        )
+
         self.match = Match(
             mid="123",
             home_team="abcdef",
@@ -34,7 +42,8 @@ class TestsMatches(unittest.TestCase):
             start_time="maine la pranz",
             match_url="facebuci.ro",
             match_score="0:3",
-            is_played=False
+            is_played=False,
+            competition_id="c123"
         )
 
         self.another_match = Match(
@@ -44,7 +53,8 @@ class TestsMatches(unittest.TestCase):
             start_time="maine la pranz",
             match_url="facebuci.com",
             match_score="0:3",
-            is_played=True
+            is_played=True,
+            competition_id="c123"
         )
 
         self.same_teams_match = Match(
@@ -54,7 +64,8 @@ class TestsMatches(unittest.TestCase):
             start_time="maine la coi",
             match_url="facebuci.org",
             match_score="0:3",
-            is_played=False
+            is_played=False,
+            competition_id="c123"
         )
 
     def tearDown(self):
@@ -63,6 +74,7 @@ class TestsMatches(unittest.TestCase):
     def helper_insert_teams_and_match(self):
         self.repository.insert_team(self.team)
         self.repository.insert_team(self.another_team)
+        self.repository.insert_competition(self.competitionz)
         return self.repository.insert_match(self.match)
 
     def test_insert_match_correct(self):

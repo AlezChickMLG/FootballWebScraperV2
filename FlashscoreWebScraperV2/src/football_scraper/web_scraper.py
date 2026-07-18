@@ -1,316 +1,352 @@
+import logging
+from time import sleep
+
 from playwright.sync_api import sync_playwright
-import os
-import traceback
-from pprint import pprint
-from datetime import datetime
 from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
 
-from football_scraper.data_processor import DataProcessor
+from football_scraper.DataProcessor.data_processor import DataProcessor
 
+logger = logging.getLogger(__name__)
+
+_FLASHSCORE_URL = "https://www.flashscore.ro/"
+_FLASHSCORE_URL_NO_SLASH = "https://www.flashscore.ro"
+
+# Default wait for a selector to appear, in milliseconds.
+_DEFAULT_TIMEOUT = 10000
+
+# (used when a match older than time_limit is reached).
+_STOP = object()
+
+# All the Flashscore CSS selectors in one place. When the site changes its
+# markup, this is the only block that needs editing.
+class _Selectors:
+    COOKIE_ACCEPT = "#onetrust-accept-btn-handler"
+    SEARCH_WINDOW = "#search-window"
+    SEARCH_INPUT = ".searchInput__input"
+    SEARCH_RESULT = ".searchResult"
+    SEARCH_RESULT_NAME = ".searchResult__participantName"
+    RESULTS_TAB = "a.tabs__tab[title='Rezultate']"
+    MATCH = ".event__match"
+    HOME_PARTICIPANT = ".event__homeParticipant span"
+    AWAY_PARTICIPANT = ".event__awayParticipant span"
+    SCORE_ITEM = "span[data-testid='wcl-tableScore']"
+    START_TIME = "span[data-testid='wcl-stageTime']"
+    MATCH_LINK = ".eventRowLink"
+    PARTICIPANT_LOGO = "img[data-testid=wcl-participantLogo]"
+    STATISTICS_FILTER = ".filterOver div a"
+    STATISTICS_SECTION = ".sectionsWrapper .section"
+    STATISTIC_ITEM = "div[data-testid='wcl-statistics']"
+    SECTION_HEADER = ".sectionHeader"
+    DETAIL_FLAGS = ".container__detailInner .duelParticipant__container .participant__image"
+
+class _CompetitionSelectors:
+    COUNTRY_NAME = ".breadcrumb__link"
+    COMPETITION_IMAGE = ".heading__logo"
 
 def reset_decorator(func):
+    """Return to the homepage before running the wrapped scraping method."""
     def wrapper(self, *args, **kwargs):
         self.reset_page()
-        result = func(self, *args, **kwargs)
-        return result
+        return func(self, *args, **kwargs)
     return wrapper
+
 
 class FlashscoreWebScraper:
     def __init__(self, headless=True):
         self.sync_playwright = sync_playwright().start()
-        self.browser = self.sync_playwright.chromium.launch(
-            headless=headless,
-        )
+        self.browser = self.sync_playwright.chromium.launch(headless=headless)
         self.context = self.browser.new_context()
         self.page = self.context.new_page()
 
-        self.flashscore_url = "https://www.flashscore.ro/"
-        self.flashscore_url_no_slash = "https://www.flashscore.ro"
+        self.flashscore_url = _FLASHSCORE_URL
+        self.flashscore_url_no_slash = _FLASHSCORE_URL_NO_SLASH
 
         self.data_processor = DataProcessor()
 
-        #Incarcare pagina principala
         self.page.goto(self.flashscore_url)
-        print("Pagina incarcatata")
+        self._accept_cookies()
 
-        #Acceptare cookie-uri
-        self.page.wait_for_selector("#onetrust-accept-btn-handler")
-        self.page.click("#onetrust-accept-btn-handler")
-        print("Am apasat pe butonul de cookies")
+    def close(self):
+        self.browser.close()
+        self.sync_playwright.stop()
 
     def reset_page(self):
         self.page.goto(self.flashscore_url)
 
-    #Intoarce toate echipele recomandate de bara de cautare
+    def _accept_cookies(self):
+        self.page.wait_for_selector(_Selectors.COOKIE_ACCEPT)
+        self.page.click(_Selectors.COOKIE_ACCEPT)
+
+    # ------------------------------------------------------------------ #
+    #  Team search                                                       #
+    # ------------------------------------------------------------------ #
     @reset_decorator
     def get_team_url(self, team_name):
+        """Return the href of the search result whose name matches team_name.
+        None if no exact match, False on timeout or error."""
         try:
-            self.page.click("#search-window")
-            print("Am apasat pe buton de cautare pentru a deschide meniul")
+            self._open_search(team_name)
 
-            self.page.wait_for_selector(".searchInput__input")
-            self.page.fill(".searchInput__input", team_name)
-            print(f"Am introdus {team_name} la cautare")
+            self.page.wait_for_selector(_Selectors.SEARCH_RESULT, timeout=_DEFAULT_TIMEOUT)
+            results = self.page.query_selector_all(_Selectors.SEARCH_RESULT)
 
-            self.page.wait_for_selector(".searchResult", timeout=10000)
-            search_result = self.page.query_selector_all(".searchResult")
-
-            for result in search_result:
-                name = result.query_selector(".searchResult__participantName").inner_text()
-                # category = result.query_selector(".searchResult__participantCategory").inner_text()
-                href = result.get_attribute("href")
-
-                print(f"Checking {name}")
-
+            for result in results:
+                name_element = result.query_selector(_Selectors.SEARCH_RESULT_NAME)
+                if name_element is None:
+                    continue
+                name = name_element.inner_text()
                 if name.strip().lower() == team_name.strip().lower():
-                    return href
+                    return result.get_attribute("href")
 
             return None
-        except PlaywrightTimeoutError as e:
-            print(f"Nu au fost gasite echipe sub denumirea de {team_name}")
+        except PlaywrightTimeoutError:
+            logger.warning("No teams found for %r", team_name)
             return False
+        except Exception as e:
+            logger.error("Error searching for team %r: %s", team_name, e)
+            return False
+
+    def _open_search(self, team_name):
+        self.page.click(_Selectors.SEARCH_WINDOW)
+        self.page.wait_for_selector(_Selectors.SEARCH_INPUT)
+        self.page.fill(_Selectors.SEARCH_INPUT, team_name)
+
+    # ------------------------------------------------------------------ #
+    #  Competition search                                                #
+    # ------------------------------------------------------------------ #
+
+    def _scrape_country_name(self):
+        return self.page.query_selector_all(_CompetitionSelectors.COUNTRY_NAME)[1].inner_text()
+
+    def _scrape_competition_image_url(self):
+        return self.page.query_selector(_CompetitionSelectors.COMPETITION_IMAGE).get_attribute("src")
+
+    def scrape_competition_by_name(self, competition_name):
+        try:
+            competition_url = self.get_team_url(competition_name)
+            if not competition_url:
+                return False
+
+            self.navigate_to_competition_page(competition_url)
+
+            competition_dict = {}
+
+            country_name = self._scrape_country_name()
+            if country_name:
+                competition_dict['country'] = country_name
+
+            competition_image_url = self._scrape_competition_image_url()
+            if competition_image_url:
+                competition_dict['competition_image_url'] = competition_image_url
+                
+            competition_dict['url'] = self.get_page_url()
+
+            return competition_dict
 
         except Exception as e:
-            print(f"Eroare intampinata la gasirea echipei {team_name}")
-            return False
+            logger.error("Error scraping competition info: %s", e)
 
+    # ------------------------------------------------------------------ #
+    #  Matches                                                           #
+    # ------------------------------------------------------------------ #
     @reset_decorator
     def get_all_matches(self, team_id=None, team_name=None, team_url=None, time_limit=None):
+        """Return a list of raw match dicts for a team's results page.
+        Accepts either (team_id + team_name) or a direct team_url."""
         try:
-            if team_id and team_name:
-                self.navigate_to_team_page_by_id(team_id=team_id, team_name=team_name)
+            self._open_results_page(team_id, team_name, team_url)
 
-                try:
-                    self.page.wait_for_selector("a.tabs__tab[title='Rezultate']")
-                except Exception as e:
-                    print("A expirat timeout-ul")
+            match_elements = self.page.query_selector_all(_Selectors.MATCH)
+            logger.info("Found %d matches", len(match_elements))
 
-                # navigam catre pagina de rezultate
-                self.navigate_to_results_page()
+            matches = []
+            for match_element in match_elements:
+                parsed = self._parse_match_element(match_element, time_limit)
+                if parsed is _STOP:
+                    break
+                if parsed is not None:
+                    matches.append(parsed)
 
-            elif team_url:
-                # navigam catre pagina echipei
-                self.navigate_to_team_page(team_url)
-
-                try:
-                    self.page.wait_for_selector("a.tabs__tab[title='Rezultate']")
-                except Exception as e:
-                    print("A expirat timeout-ul")
-
-                # navigam catre pagina de rezultate
-                self.navigate_to_results_page()
-
-            all_matches = self.page.query_selector_all(".event__match")
-            matches_dict = []
-
-            print(f"Numarul de meciuri: {len(all_matches)}")
-
-            for match in all_matches:
-                home_team_element = match.query_selector(".event__homeParticipant span")
-                away_team_element = match.query_selector(".event__awayParticipant span")
-                #start_time_element = match.query_selector(".event__time")
-                #start_time_element = match.query_selector("span[data-testid='wcl-stageTime'] span[data-testid='wcl-scores-simple-text-01']")
-                start_time_element = match.query_selector("span[data-testid='wcl-stageTime']")
-                match_url_element = match.query_selector(".eventRowLink")
-
-                if not match_url_element:
-                    continue
-
-                match_url = match_url_element.get_attribute("href")
-
-                match_dict = {
-                    "match_url" : match_url
-                }
-
-                if start_time_element:
-                    start_time = start_time_element.inner_text()
-                    formatted_start_time, string_start_time = self.data_processor.process_start_time(start_time)
-                    match_dict["start_time"] = string_start_time
-
-                    if time_limit:
-                        if formatted_start_time < time_limit:
-                            break
-
-                if home_team_element:
-                    home_team = home_team_element.inner_text()
-                    match_dict["home_team"] = home_team
-
-                if away_team_element:
-                    away_team = away_team_element.inner_text()
-                    match_dict["away_team"] = away_team
-
-                home_team_image_url, away_team_image_url = [element.get_attribute("src") for element in match.query_selector_all("img[data-testid=wcl-participantLogo]")]
-                if home_team_image_url and away_team_image_url:
-                    match_dict["home_team_image_url"] = home_team_image_url
-                    match_dict['away_team_image_url'] = away_team_image_url
-
-                matches_dict.append(match_dict)
-
-            return matches_dict
+            return matches
         except Exception as e:
-            print(f"Am intampinat o eroare la gasirea / procesarea meciurilor: {e}")
-            traceback.print_exc()
+            logger.error("Error retrieving matches: %s", e)
+            return None
 
+    def _open_results_page(self, team_id, team_name, team_url):
+        """Navigate to a team's results page via id+name or direct url."""
+        if team_id and team_name:
+            self.navigate_to_team_page_by_id(team_id=team_id, team_name=team_name)
+        elif team_url:
+            self.navigate_to_team_page(team_url)
+        else:
+            return
+
+        try:
+            self.page.wait_for_selector(_Selectors.RESULTS_TAB)
+        except Exception:
+            logger.warning("Results tab did not appear in time")
+
+        self.navigate_to_results_page()
+
+    def _parse_match_element(self, match_element, time_limit):
+        """Turn one .event__match element into a raw dict. Returns None to skip,
+        or the _STOP sentinel when time_limit is reached (stop iterating)."""
+        match_link = match_element.query_selector(_Selectors.MATCH_LINK)
+        if not match_link:
+            return None
+
+        match_dict = {"match_url": match_link.get_attribute("href")}
+
+        start_time_element = match_element.query_selector(_Selectors.START_TIME)
+        if start_time_element:
+            raw_start = start_time_element.inner_text()
+            formatted_start, string_start = self.data_processor.process_start_time(raw_start)
+            match_dict["start_time"] = string_start
+
+            if time_limit and formatted_start and formatted_start < time_limit:
+                return _STOP
+
+        home = match_element.query_selector(_Selectors.HOME_PARTICIPANT)
+        if home:
+            match_dict["home_team"] = home.inner_text()
+
+        score_tags = match_element.query_selector_all(_Selectors.SCORE_ITEM)
+        if score_tags:
+            score = ":".join(score_tag.inner_text() for score_tag in score_tags)
+            match_dict["score"] = score
+
+        away = match_element.query_selector(_Selectors.AWAY_PARTICIPANT)
+        if away:
+            match_dict["away_team"] = away.inner_text()
+
+        logos = match_element.query_selector_all(_Selectors.PARTICIPANT_LOGO)
+        if len(logos) >= 2:
+            match_dict["home_team_image_url"] = logos[0].get_attribute("src")
+            match_dict["away_team_image_url"] = logos[1].get_attribute("src")
+
+        return match_dict
+
+    # ------------------------------------------------------------------ #
+    #  Statistics                                                        #
+    # ------------------------------------------------------------------ #
     @reset_decorator
     def get_statistics(self, match_url=None):
+        """Return {category: {stat_name: {home, away}}} for a match's stats tab."""
         try:
             if match_url:
-                #navigam pe pagina meciului
                 self.navigate_to_match_page(match_url)
-
-                #navigam pe tabul de statistici
                 self.navigate_to_statistics_tab()
+                self.page.wait_for_selector(_Selectors.STATISTICS_SECTION.split()[-1])
 
-                # obtinem statisticile
-                self.page.wait_for_selector(".section")
+            self.page.wait_for_selector(_Selectors.STATISTIC_ITEM)
+            sections = self.page.query_selector_all(_Selectors.STATISTICS_SECTION)
+            if not sections:
+                return {}
 
-            self.page.wait_for_selector("div[data-testid='wcl-statistics']")
-            statistics = self.page.query_selector_all(".sectionsWrapper .section")
+            statistics = {}
+            for section in sections:
+                title, section_stats = self._parse_statistics_section(section)
+                if title is None:
+                    return None
+                statistics[title] = section_stats
 
-            statistics_dict = {}
-
-            if statistics:
-                for section in statistics:
-                    individual_statistics = section.query_selector_all("div[data-testid='wcl-statistics']")
-
-                    self.page.wait_for_selector(".sectionHeader")
-                    title_name_statistics = section.query_selector(".sectionHeader")
-
-                    if title_name_statistics is None:
-                        print("Eroare: nu a fost gasit title_name_statistics")
-                        return
-
-                    title_name = title_name_statistics.inner_text()
-                    statistics_dict[title_name] = {}
-
-                    if individual_statistics is None:
-                        print("Eroare: nu au fost gasite statisticile individuale")
-                        return
-
-                    for individual_statistic in individual_statistics:
-                        details = individual_statistic.query_selector("div").query_selector_all("div")
-
-                        if details:
-                            home_value_element = details[0].query_selector_all("span")
-                            home_value = "".join([element.inner_text() for element in home_value_element])
-
-                            away_value_element = details[2].query_selector_all("span")
-                            away_value = "".join([element.inner_text() for element in away_value_element])
-
-                            statistic_name_element = details[1].query_selector("span")
-                            statistic_name = statistic_name_element.inner_text()
-
-                            statistics_dict[title_name][statistic_name] = {
-                                "home": home_value,
-                                "away": away_value
-                            }
-
-                return statistics_dict
+            return statistics
         except Exception as e:
-            print(f"Am intampinat o eroare la procesarea statisticilor: {e}")
-            traceback.print_exc()
+            logger.error("Error processing statistics: %s", e)
+            return None
+
+    def _parse_statistics_section(self, section):
+        """Return (title, {stat_name: {home, away}}) for one stats section."""
+        header = section.query_selector(_Selectors.SECTION_HEADER)
+        if header is None:
+            logger.error("Statistics section header not found")
+            return None, None
+
+        title = header.inner_text()
+        section_stats = {}
+
+        for item in section.query_selector_all(_Selectors.STATISTIC_ITEM):
+            parsed = self._parse_statistic_item(item)
+            if parsed is not None:
+                name, values = parsed
+                section_stats[name] = values
+
+        return title, section_stats
+
+    def _parse_statistic_item(self, item):
+        """Return (stat_name, {home, away}) for one statistic row, or None if the
+        row's markup doesn't match what we expect."""
+        try:
+            wrapper = item.query_selector("div")
+            if wrapper is None:
+                return None
+
+            details = wrapper.query_selector_all("div")
+            if len(details) < 3:
+                return None
+
+            home_value = "".join(el.inner_text() for el in details[0].query_selector_all("span"))
+            away_value = "".join(el.inner_text() for el in details[2].query_selector_all("span"))
+
+            name_element = details[1].query_selector("span")
+            if name_element is None:
+                return None
+            name = name_element.inner_text()
+
+            return name, {"home": home_value, "away": away_value}
+        except Exception as e:
+            logger.warning("Failed to parse a statistic row: %s", e)
+            return None
 
     def get_team_flags_from_statistics(self, match_url=None):
+        """Return (home_flag_url, away_flag_url) from a match's detail header."""
         try:
             if match_url:
                 self.navigate_to_match_page(match_url)
                 self.navigate_to_statistics_tab()
 
-            home_team_image_url, away_team_image_url = (
-                [element.get_attribute("src") for element in self.page.query_selector_all(
-                    ".container__detailInner .duelParticipant__container .participant__image")[:2]])
-            return home_team_image_url, away_team_image_url
-
+            flags = self.page.query_selector_all(_Selectors.DETAIL_FLAGS)[:2]
+            home_flag, away_flag = (el.get_attribute("src") for el in flags)
+            return home_flag, away_flag
         except Exception as e:
-            print(f"Eroare la obtinerea steagurilor de pe pagina de statistici: {e}")
+            logger.error("Error retrieving team flags: %s", e)
             return False
 
+    # ------------------------------------------------------------------ #
+    #  Navigation helpers                                                #
+    # ------------------------------------------------------------------ #
     def navigate_to_team_page(self, team_url):
-        full_team_url = f"{self.flashscore_url}{team_url}"
-        self.page.goto(full_team_url)
-        print(f"Am intrat pe pagina echipei")
+        self.page.goto(f"{self.flashscore_url}{team_url}")
+
+    def navigate_to_competition_page(self, competition_url):
+        self.page.goto(f"{self.flashscore_url}{competition_url}")
+        sleep(5)
 
     def navigate_to_team_page_by_id(self, team_name, team_id):
-        self.page.goto(f"{self.flashscore_url_no_slash}/echipa/{team_name.lower().replace(' ', '-')}/{team_id}")
+        slug = team_name.lower().replace(" ", "-")
+        self.page.goto(f"{self.flashscore_url_no_slash}/echipa/{slug}/{team_id}")
 
     def navigate_to_results_page(self):
-        results_href_element = self.page.query_selector("a.tabs__tab[title='Rezultate']")
-        results_href = results_href_element.get_attribute("href")
-
-        result_url = f"{self.flashscore_url_no_slash}{results_href}"
-
-        self.page.goto(result_url)
-        print("Am deschis sectiunea de rezultate")
+        results_tab = self.page.query_selector(_Selectors.RESULTS_TAB)
+        if results_tab is None:
+            logger.warning("Results tab not found; staying on current page")
+            return
+        results_href = results_tab.get_attribute("href")
+        self.page.goto(f"{self.flashscore_url_no_slash}{results_href}")
 
     def navigate_to_match_page(self, match_url):
         self.page.goto(match_url)
-        print("Am intrat pe pagina meciului")
 
     def navigate_to_statistics_tab(self):
-        all_buttons = self.page.query_selector_all(".filterOver div a")
-        statistics_button = all_buttons[1]
-        button_href = statistics_button.get_attribute("href")
-        self.page.goto(f"{self.flashscore_url_no_slash}{button_href}")
-        print("Am ajuns pe pagina de statistici")
-
-    def process_info(self, info, limit=10):
-        team_name = info["team"]
-        print(f"Prelucram echipa {team_name}")
-
-        #mergem inapoi la pagina principala
-        self.reset_page()
-        print(f"Am resetat pagina")
-
-        #obtine url echipei
-        team_url = self.get_team_url(team_name)
-
-        #verificam daca a returnat un link valid
-        if team_url is None:
-            print(f"Nu am gasit echipa {team_name}")
+        buttons = self.page.query_selector_all(_Selectors.STATISTICS_FILTER)
+        if len(buttons) < 2:
+            logger.warning("Statistics tab button not found (found %d)", len(buttons))
             return
+        statistics_href = buttons[1].get_attribute("href")
+        self.page.goto(f"{self.flashscore_url_no_slash}{statistics_href}")
 
-        elif team_url is not False:
-            #obtinem toate meciurile
-            matches = self.get_all_matches(team_url=team_url)
-
-            #procesam meciurile
-            self.process_matches(team_name, matches, limit)
-
-    def process_matches(self, team, matches, limit):
-        for match_index, match in enumerate(matches):
-            if match_index >= limit:
-                print("Am terminat de procesat statisticile")
-                break
-
-            # print(f"Obtinem statisticile pentru meciul {match['home_team']} - {match['away_team']} disputat la data de {match['start_time']}")
-            pprint(match)
-
-            statistics = self.get_statistics()
-            pprint(statistics)
-
-            # scriem rezultatele
-            if statistics:
-                pass
-                #self.write_to_file(team, match, statistics)
-
-            else:
-                print("Nu am putat procesa statisticile sau nu exista")
-
-    def write_to_file(self, team_name, match, statistics):
-        os.makedirs(f"output/{team_name}", exist_ok=True)
-
-        with open(f"output/{team_name}/{match['home_team']}-{match['away_team']}|{match['start_time'].replace(' ', '-')}", "w") as output_file:
-            for (category, all_stats) in statistics.items():
-                output_file.write(f"{category}\n")
-                for (stat_name, values) in all_stats.items():
-                    output_file.write(f"{stat_name}: {values['home']} | {values['away']}\n")
-                output_file.write("\n")
-
-    # def run(self):
-    #     info = self.request_component.send_info()
-    #
-    #     if info:
-    #         self.process_info(info, limit=1)
+    def get_page_url(self):
+        return self.page.url
 
 if __name__ == "__main__":
     web_scraper = FlashscoreWebScraper()

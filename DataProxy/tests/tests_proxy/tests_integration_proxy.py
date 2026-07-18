@@ -1,5 +1,6 @@
 import unittest
 
+from football_repository.football_dataclasses.competition_dataclass import Competition
 from football_repository.football_dataclasses.matches_dataclass import Match
 from football_repository.football_dataclasses.teams_dataclass import Team
 from football_repository.repository import Repository
@@ -142,6 +143,33 @@ class IntegrationProxy(unittest.TestCase):
         self.assertIsInstance(proxy_team, Team, "Obiect de tip gresit")
         self.assertEqual(self.team, proxy_team, "Echipa diferite")
 
+    def test_get_competition(self):
+        test_competition = "Superliga"
+        competition = self.proxy.get_competition(test_competition)
+
+        self.assertIsNotNone(
+            competition,
+            "Error: None competition"
+        )
+
+        self.assertNotEqual(
+            competition,
+            False,
+            "Error: Encountered an error"
+        )
+
+        self.assertIsInstance(
+            competition,
+            Competition,
+            "Error: Different object type"
+        )
+
+        self.assertEqual(
+            competition.competition_name,
+            test_competition,
+            "Error: Different competition name"
+        )
+
     def test_get_all_matches_scraper(self):
         try:
             team = self.proxy.get_team(team_name="Spania")
@@ -177,19 +205,59 @@ class IntegrationProxy(unittest.TestCase):
             print(f"Eroare la test: {e}")
 
     def test_get_statistics_scraper(self):
-        team_name = "Norvegia"
+        try:
+            team_name = "Norvegia"
 
-        team = self.proxy.get_team(team_name=team_name)
-        self.assertIsNotNone(team, "Echipa goala")
+            team = self.proxy.get_team(team_name=team_name)
+            self.assertIsNotNone(team, "Echipa goala")
 
-        matches = self.proxy.get_matches(home_team_id=team.team_id, home_team_name=team.team_name)
-        self.assertIsNotNone(matches, "Meciuri goale")
+            matches = self.proxy.get_matches(team_id=team.team_id, team_name=team.team_name)
+            self.assertIsNotNone(matches, "Meciuri goale")
 
-        statistics = self.proxy.get_statistics(matches=matches[:10])
-        self.assertIsNotNone(statistics, "Statistici goale")
-        self.assertIsInstance(statistics, list, "Colectie gresita")
-        self.assertTrue(len(statistics) != 0, "Colectie goala")
+            statistics = self.proxy.get_statistics_for_matches(matches=matches[:10])
+            self.assertIsNotNone(statistics, "Statistici goale")
+            self.assertIsInstance(statistics, list, "Colectie gresita")
+            self.assertTrue(len(statistics) != 0, "Colectie goala")
 
+        except Exception as e:
+            print(f"Error: {e}")
+
+
+    def test_get_one_match_statistics_scraper(self):
+        try:
+            team_name = "Norvegia"
+
+            team = self.proxy.get_team(team_name=team_name)
+            self.assertIsNotNone(team, "Echipa goala")
+
+            matches = self.proxy.get_matches(team_id=team.team_id, team_name=team.team_name)
+            self.assertIsNotNone(matches, "Meciuri goale")
+
+            statistics = self.proxy.get_match_statistics(matches[0])
+            self.assertIsNotNone(statistics, "Statistici goale")
+            self.assertIsInstance(statistics, dict, "Colectie gresita")
+            self.assertTrue(len(statistics.keys()) == 2, "Numar diferit de statistici per echipa")
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def test_scan_matches(self):
+        try:
+            team_name = "Norvegia"
+
+            team = self.proxy.get_team(team_name=team_name)
+            self.assertIsNotNone(team, "Echipa goala")
+
+            matches = self.proxy.scan_matches(team_id=team.team_id, team_name=team.team_name)
+            self.assertIsNotNone(matches, "Meciuri goale")
+
+            statistics = self.proxy.get_match_statistics(matches[0])
+            self.assertIsNotNone(statistics, "Statistici goale")
+            self.assertIsInstance(statistics, dict, "Colectie gresita")
+            self.assertTrue(len(statistics.keys()) == 2, "Numar diferit de statistici per echipa")
+
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == '__main__':
     unittest.main()
