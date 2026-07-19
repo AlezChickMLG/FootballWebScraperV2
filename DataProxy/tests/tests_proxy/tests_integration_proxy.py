@@ -4,10 +4,16 @@ from football_repository.football_dataclasses.competition_dataclass import Compe
 from football_repository.football_dataclasses.matches_dataclass import Match
 from football_repository.football_dataclasses.teams_dataclass import Team
 from football_repository.repository import Repository
-from football_scraper.data_processor import DataProcessor
+from football_scraper.DataProcessor.data_processor import DataProcessor
 
 from src.football_proxy.proxy import Proxy
 
+import logging
+
+logging.basicConfig(
+    level=getattr(logging, "INFO"),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 class IntegrationProxy(unittest.TestCase):
     def setUp(self):
@@ -186,6 +192,14 @@ class IntegrationProxy(unittest.TestCase):
         except Exception as e:
             print(f"Eroare la test: {e}")
 
+    def test_scrape_meciuri_amicale(self):
+        try:
+            test_competition = "Meciuri amicale intre echipe nationale"
+            scraped_competition = self.proxy.get_competition(test_competition)
+
+        except Exception as e:
+            print(f"Eroare la test: {e}")
+
     def test_get_all_matches_database(self):
         try:
             team = self.proxy.get_team(team_name="Norvegia")
@@ -258,6 +272,13 @@ class IntegrationProxy(unittest.TestCase):
 
         except Exception as e:
             print(f"Error: {e}")
+
+    def test_scrape_competition(self):
+        try:
+            competition_name = "Superliga"
+
+        except Exception as e:
+            print(f"Error: Failed to test scraping a competition")
 
 if __name__ == '__main__':
     unittest.main()

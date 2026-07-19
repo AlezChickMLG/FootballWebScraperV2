@@ -2,6 +2,7 @@ import logging
 
 from football_repository.football_dataclasses.aparare_dataclass import AparareObject
 from football_repository.football_dataclasses.atac_dataclass import AtacObject
+from football_repository.football_dataclasses.competition_dataclass import Competition
 from football_repository.football_dataclasses.matches_dataclass import Match
 from football_repository.football_dataclasses.pase_dataclass import PaseObject
 from football_repository.football_dataclasses.portar_dataclass import PortarObject
@@ -10,7 +11,9 @@ from football_repository.football_dataclasses.teams_dataclass import Team
 from football_repository.football_dataclasses.topStatistics_dataclass import TopStatisticsObject
 from football_repository.repository import Repository
 from football_scraper.Checkers.search_bar_checker import SearchBarChecker
-from football_scraper.data_processor import DataProcessor
+from football_scraper.DataProcessor.competition_processor import CompetitionProcessor
+from football_scraper.DataProcessor.data_processor import DataProcessor
+from football_scraper.NameNormalizer.NameNormalizer import NameNormalizer
 from football_scraper.web_scraper import FlashscoreWebScraper
 
 logger = logging.getLogger(__name__)
@@ -29,7 +32,9 @@ class Proxy:
     def __init__(self, headless=True, database_name="football_database"):
         self.flashscore_web_scraper = FlashscoreWebScraper(headless)
         self.data_processor = DataProcessor()
+        self.competition_processor = CompetitionProcessor()
         self.search_bar_checker = SearchBarChecker()
+        self.name_normalizer = NameNormalizer()
         self.repository = Repository(database_name)
 
         # Read-side lookups used to decide whether a match's statistics are
@@ -53,7 +58,7 @@ class Proxy:
         }
 
     # ------------------------------------------------------------------ #
-    #  Teams and search objects                                          #
+    #  Teams                                                             #
     # ------------------------------------------------------------------ #
     def get_team(self, team_name):
         """Return a Team by name, scraping and storing it if not cached.
@@ -94,6 +99,10 @@ class Proxy:
     def get_team_by_id(self, team_id):
         return self.repository.get_team_by_id(team_id)
 
+    # ------------------------------------------------------------------ #
+    #  Competitions                                                      #
+    # ------------------------------------------------------------------ #
+
     def get_competition(self, competition_name):
         """Returns a Competition object from competition_name, or False if not
         found / not a competition."""
@@ -108,23 +117,70 @@ class Proxy:
                 return False
 
             if self.search_bar_checker.is_endpoint_url(competition_url):
-                self.flashscore_web_scraper.navigate_to_team_page_by_id(
-                    team_name=competition_name,
-                    team_id=self.data_processor.get_id_from_endpoint_url(competition_url),
+                self.flashscore_web_scraper.navigate_to_competition_page(
+                    competition_url=competition_url,
                 )
                 competition_url = self.flashscore_web_scraper.get_page_url()
 
             if not competition_url or not self.search_bar_checker.is_competition(competition_url):
                 return False
 
-            competition = self.data_processor.format_competition_object_from_full_url(competition_url)
-            self.repository.insert_competition(competition)
+            scraped_competition = self.flashscore_web_scraper.scrape_competition_page()
+            formatted_competition = self.competition_processor.format_competition_object(competition_name, scraped_competition)
+
+            self.repository.insert_competition(formatted_competition)
             self.repository.commit()
-            return competition
+            return formatted_competition
+
         except Exception as e:
             logger.error("Failed to get competition %r: %s", competition_name, e)
             return False
 
+    def __scrape_all_raw_competitions(self, raw_competitions):
+        try:
+            distinct_competitions = dict.fromkeys([competition['competition_name'] for competition in raw_competitions])
+            formatted_competitions = []
+
+            for raw_competition in distinct_competitions:
+                formatted_competitions.append(self.__scrape_single_raw_competition(raw_competition))
+
+            frozen_competitions = self.competition_processor.get_frozen_competitions(formatted_competitions)
+            distinct_competitions = list(dict.fromkeys(frozen_competitions))
+
+            return self.competition_processor.get_unfrozen_competitions(distinct_competitions)
+
+        except Exception as e:
+            logger.error("Failed to scrape all raw competitions: %s", e)
+            return False
+
+    def __scrape_single_raw_competition(self, raw_competition):
+        """Raw competition is the name of the competition + phase"""
+        real_competition_name = self.competition_processor.get_only_competition_name(raw_competition)
+        normalized_competition_name = self.name_normalizer.normalize_object_name(real_competition_name)
+        return self.get_competition(normalized_competition_name)
+
+    def __build_competition_map(self, raw_competitions):
+        """{nume_competitie_normalizat: competition_id} din competițiile brute."""
+        if not raw_competitions:
+            return {}
+
+        competition_map = {}
+        distinct = {competition["competition_name"] for competition in raw_competitions}
+
+        for raw_name in distinct:
+            try:
+                real_name = self.competition_processor.get_only_competition_name(raw_name)
+                normalized = self.name_normalizer.normalize_object_name(real_name)
+
+                competition = self.get_competition(normalized)
+                if competition:  # get_competition poate întoarce False
+                    competition_map[normalized] = competition.id
+                else:
+                    logger.warning("Could not resolve competition %r", raw_name)
+            except Exception as e:
+                logger.error("Failed to process competition %r: %s", raw_name, e)
+
+        return competition_map
 
     # ------------------------------------------------------------------ #
     #  Matches                                                           #
@@ -166,14 +222,18 @@ class Proxy:
     def _scrape_and_store_matches(self, team_name, team_id):
         """Scrape a team's matches, upsert the teams and matches, return them."""
         try:
-            raw_matches = self.flashscore_web_scraper.get_all_matches(
+            raw_competitions, raw_matches = self.flashscore_web_scraper.get_all_matches(
                 team_name=team_name, team_id=team_id
             )
+
+            formatted_competitions = self.__scrape_all_raw_competitions(raw_competitions)
+            competition_map = self.__build_competition_map(raw_competitions)
+
             if not raw_matches:
                 logger.warning("Scraper returned no matches for %s", team_name)
                 return []
 
-            formatted = self.data_processor.format_matches(raw_matches)
+            formatted = self.data_processor.format_matches(raw_matches, competition_map)
             if not formatted:
                 logger.warning("No matches could be formatted for %s", team_name)
                 return []
@@ -182,7 +242,7 @@ class Proxy:
             for entry in formatted:
                 self._upsert_team(entry["home_team"])
                 self._upsert_team(entry["away_team"])
-                self.repository.insert_match(entry["match"])
+                self._upsert_match(entry["match"])
                 stored_matches.append(entry["match"])
 
             self.repository.commit()
@@ -197,6 +257,11 @@ class Proxy:
             team.team_name = team.team_name.title().replace("-", " ")
         if not self.repository.insert_team(team):
             self.repository.update_team(team)
+
+    def _upsert_match(self, match):
+        """Insert a team, falling back to update if it already exists."""
+        if not self.repository.insert_match(match):
+            self.repository.update_match(match)
 
     # ------------------------------------------------------------------ #
     #  Statistics                                                        #
@@ -293,4 +358,64 @@ class Proxy:
 
 
 if __name__ == "__main__":
-    proxy = Proxy()
+  proxy = Proxy()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  # def __scrape_and_store_competitions(self, raw_competitions):
+  #     """Scrape and store all raw competitions from scraped matches
+  #     competition : {competition_name: ... competition_href: ....}"""
+  #     distinct_competitions = set(raw_competitions)
+  #     for competition in distinct_competitions:
+  #         competition_object = self.__scrape_and_store_competition_from_matches(competition)
+  #
+  # def __scrape_and_store_competition(self, competition):
+  #     """Scrape and store one raw competition dictionary: keys(competition_name, competition_href)"""
+  #     full_competition_url = self.data_processor.build_competition_url_from_incomplete_url(competition['url'])
+  #     competition_id = self.competition_processor.get_competition_id_from_url(full_competition_url)
+  #
+  #     database_competition = self.repository.get_competition_by_id(competition_id)
+  #     if database_competition:
+  #         return database_competition
+  #
+  #     competition_info = self.flashscore_web_scraper.scrape_competition_by_url(full_competition_url)
+  #     competition_object = self.competition_processor.format_competition_object(
+  #         competition_name=competition['competition_name'],
+  #         competition_dict=competition_info
+  #     )
+  #
+  #     self.repository.insert_competition(competition_object)
+  #
+  #     return competition_object

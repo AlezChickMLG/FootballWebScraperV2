@@ -1,6 +1,7 @@
 import logging
 from time import sleep
 
+from football_scraper.NameNormalizer.NameNormalizer import NameNormalizer
 from playwright.sync_api import sync_playwright
 from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
 
@@ -26,7 +27,6 @@ class _Selectors:
     SEARCH_RESULT = ".searchResult"
     SEARCH_RESULT_NAME = ".searchResult__participantName"
     RESULTS_TAB = "a.tabs__tab[title='Rezultate']"
-    MATCH = ".event__match"
     HOME_PARTICIPANT = ".event__homeParticipant span"
     AWAY_PARTICIPANT = ".event__awayParticipant span"
     SCORE_ITEM = "span[data-testid='wcl-tableScore']"
@@ -42,6 +42,13 @@ class _Selectors:
 class _CompetitionSelectors:
     COUNTRY_NAME = ".breadcrumb__link"
     COMPETITION_IMAGE = ".heading__logo"
+
+class _MatchesSelectors:
+    MATCHES_PARENT = "div[data-analytics-context='tab-results']"
+    ALL_ELEMENTS = f"{MATCHES_PARENT}>section>div>div"
+    MATCH = ".event__match"
+    COMPETITION = ".headerLeague__wrapper"
+    COMPETITION_NAME = "a.headerLeague__title"
 
 def reset_decorator(func):
     """Return to the homepage before running the wrapped scraping method."""
@@ -62,6 +69,7 @@ class FlashscoreWebScraper:
         self.flashscore_url_no_slash = _FLASHSCORE_URL_NO_SLASH
 
         self.data_processor = DataProcessor()
+        self.name_normalizer = NameNormalizer()
 
         self.page.goto(self.flashscore_url)
         self._accept_cookies()
@@ -94,7 +102,7 @@ class FlashscoreWebScraper:
                 name_element = result.query_selector(_Selectors.SEARCH_RESULT_NAME)
                 if name_element is None:
                     continue
-                name = name_element.inner_text()
+                name = self.name_normalizer.normalize_object_name(name_element.inner_text())
                 if name.strip().lower() == team_name.strip().lower():
                     return result.get_attribute("href")
 
@@ -112,7 +120,7 @@ class FlashscoreWebScraper:
         self.page.fill(_Selectors.SEARCH_INPUT, team_name)
 
     # ------------------------------------------------------------------ #
-    #  Competition search                                                #
+    #  Competition search from main tab                                  #
     # ------------------------------------------------------------------ #
 
     def _scrape_country_name(self):
@@ -122,6 +130,7 @@ class FlashscoreWebScraper:
         return self.page.query_selector(_CompetitionSelectors.COMPETITION_IMAGE).get_attribute("src")
 
     def scrape_competition_by_name(self, competition_name):
+        """:returns { country: ..., competition_image_url: ..., url: .... }"""
         try:
             competition_url = self.get_team_url(competition_name)
             if not competition_url:
@@ -129,26 +138,59 @@ class FlashscoreWebScraper:
 
             self.navigate_to_competition_page(competition_url)
 
-            competition_dict = {}
-
-            country_name = self._scrape_country_name()
-            if country_name:
-                competition_dict['country'] = country_name
-
-            competition_image_url = self._scrape_competition_image_url()
-            if competition_image_url:
-                competition_dict['competition_image_url'] = competition_image_url
-                
-            competition_dict['url'] = self.get_page_url()
-
-            return competition_dict
+            return self.scrape_competition_page()
 
         except Exception as e:
-            logger.error("Error scraping competition info: %s", e)
+            logger.error("Error scraping competition info by name: %s", e)
+
+    def scrape_competition_by_url(self, competition_url):
+        try:
+            self.navigate_to_competition_page(competition_url)
+
+            return self.scrape_competition_page()
+
+        except Exception as e:
+            logger.error("Error scraping competition info by url: %s", e)
+
+    def scrape_competition_page(self):
+        competition_dict = {}
+
+        country_name = self._scrape_country_name()
+        if country_name:
+            competition_dict['country'] = country_name
+
+        competition_image_url = self._scrape_competition_image_url()
+        if competition_image_url:
+            competition_dict['competition_image_url'] = competition_image_url
+
+        competition_dict['url'] = self.get_page_url()
+
+        return competition_dict
+
+    def __scrape_competition_element(self, element):
+        try:
+            competition_element = element.query_selector(_MatchesSelectors.COMPETITION_NAME)
+
+            return {
+                'competition_name': competition_element.get_attribute("title"),
+                'competition_href': competition_element.get_attribute("href")
+            }
+
+        except Exception as e:
+            logger.error("Cannot scraper competition element: %s", e)
+            return None
 
     # ------------------------------------------------------------------ #
     #  Matches                                                           #
     # ------------------------------------------------------------------ #
+    def __is_match(self, element):
+        class_attr = element.get_attribute("class") or ""
+        return _MatchesSelectors.MATCH[1:] in class_attr.split()
+
+    def __is_competition(self, element):
+        class_attr = element.get_attribute("class") or ""
+        return _MatchesSelectors.COMPETITION[1:] in class_attr.split()
+
     @reset_decorator
     def get_all_matches(self, team_id=None, team_name=None, team_url=None, time_limit=None):
         """Return a list of raw match dicts for a team's results page.
@@ -156,18 +198,43 @@ class FlashscoreWebScraper:
         try:
             self._open_results_page(team_id, team_name, team_url)
 
-            match_elements = self.page.query_selector_all(_Selectors.MATCH)
-            logger.info("Found %d matches", len(match_elements))
+            #match_elements = self.page.query_selector_all(_Selectors.MATCH)
+            #logger.info("Found %d matches", len(match_elements))
+
+            all_elements = self.page.query_selector_all(_MatchesSelectors.ALL_ELEMENTS)
+            logger.info("Found %d elements", len(all_elements))
 
             matches = []
-            for match_element in match_elements:
-                parsed = self._parse_match_element(match_element, time_limit)
+            competitions = []
+
+            last_competition_scraped = None
+
+            for element in all_elements:
+                if self.__is_match(element):
+                    parsed = self._parse_match_element(element, time_limit)
+                    element_list = matches
+
+                    if last_competition_scraped:
+                        parsed['competition_details'] = last_competition_scraped
+
+                elif self.__is_competition(element):
+                    parsed = self.__scrape_competition_element(element)
+                    element_list = competitions
+
+                    last_competition_scraped = parsed
+
+                else:
+                    parsed = None
+                    element_list = None
+
+                    logger.error("Unknown element in results tab")
+
                 if parsed is _STOP:
                     break
                 if parsed is not None:
-                    matches.append(parsed)
+                    element_list.append(parsed)
 
-            return matches
+            return competitions, matches
         except Exception as e:
             logger.error("Error retrieving matches: %s", e)
             return None

@@ -1,2 +1,0 @@
-decorators
-football_scraper

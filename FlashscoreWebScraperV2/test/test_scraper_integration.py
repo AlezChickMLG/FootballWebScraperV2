@@ -198,7 +198,7 @@ class TestIntegrationWebScraper(unittest.TestCase):
             "Error: Different extension"
         )
 
-    def test_scrape_competition_dictionary(self):
+    def test_scrape_competition_dictionary_by_name(self):
         test_competition = "Superliga"
         competition_dict = self.scraper.scrape_competition_by_name(test_competition)
 

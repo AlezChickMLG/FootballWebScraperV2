@@ -163,6 +163,7 @@ class Repository:
                 country TEXT NOT NULL,
                 competition_name TEXT NOT NULL,
                 url TEXT NOT NULL,
+                competition_image_url TEXT NOT NULL,
 
                 UNIQUE(competition_name),
                 UNIQUE(url)

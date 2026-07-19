@@ -14,6 +14,7 @@ class StatisticsSerializer:
     def __init__(self):
         self.name_normalizer = NameNormalizer()
 
+
     def serialize_statistics(self, statistics):
         """
         statistics: {team_id: {category: dataclass}}  — expected two teams

@@ -3,8 +3,8 @@ import unittest
 from football_repository.football_dataclasses.matches_dataclass import Match
 from football_repository.football_dataclasses.teams_dataclass import Team
 
-from src.football_scraper.data_processor import DataProcessor
-from src.football_scraper.web_scraper import FlashscoreWebScraper
+from football_scraper.DataProcessor.data_processor import DataProcessor
+from football_scraper.web_scraper import FlashscoreWebScraper
 
 
 class DataProcessorIntegrationTests(unittest.TestCase):

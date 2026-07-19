@@ -10,6 +10,7 @@ from football_repository.football_dataclasses.portar_dataclass import PortarObje
 from football_repository.football_dataclasses.teams_dataclass import Team
 from football_repository.football_dataclasses.topStatistics_dataclass import TopStatisticsObject
 from football_repository.football_dataclasses.suturi_dataclass import SuturiObject
+from football_scraper.DataProcessor.competition_processor import CompetitionProcessor
 
 from football_scraper.NameNormalizer.NameNormalizer import NameNormalizer
 
@@ -34,6 +35,7 @@ _FLASHSCORE_BASE = "https://www.flashscore.ro"
 class DataProcessor:
     def __init__(self):
         self.name_normalizer = NameNormalizer()
+        self.competition_processor = CompetitionProcessor()
 
     # ------------------------------------------------------------------ #
     #  Team formatting                                                   #
@@ -46,6 +48,9 @@ class DataProcessor:
         competition_name_slug = competition_name.lower().replace(" ", "-")
         country_slug = country.lower().replace(" ", "-")
         return f"{_FLASHSCORE_BASE}/fotbal/{country_slug}/{competition_name_slug}"
+
+    def build_competition_url_from_incomplete_url(self, incomplete_url):
+        return f"{_FLASHSCORE_BASE}{incomplete_url}"
 
     def get_id_from_endpoint_url(self, team_url):
         return team_url.split(':')[-1]
@@ -68,38 +73,21 @@ class DataProcessor:
         )
 
     # ------------------------------------------------------------------ #
-    #  Competition formatting                                            #
-    # ------------------------------------------------------------------ #
-
-    def format_competition_object_from_full_url(self, competition_url):
-        parts = competition_url[:-1].split('/')
-        competition_id = parts[-2]
-        country = self.name_normalizer.normalize_object_name(parts[4])
-        competition_name = self.name_normalizer.normalize_object_name(parts[5])
-
-        return Competition(
-            id=competition_id,
-            country=country,
-            competition_name=competition_name,
-            url=competition_url
-        )
-
-    # ------------------------------------------------------------------ #
     #  Match formatting                                                  #
     # ------------------------------------------------------------------ #
     def filter_matches(self, matches, home_team, away_team=None, start_time=None,
                        start_date=None, finish_date=None, competition=None):
         return matches
 
-    def format_matches(self, matches):
+    def format_matches(self, matches, competition_map):
         formatted_matches = []
         for match in matches:
-            formatted = self._format_single_match(match)
+            formatted = self._format_single_match(match, competition_map)
             if formatted is not None:
                 formatted_matches.append(formatted)
         return formatted_matches
 
-    def _format_single_match(self, match):
+    def _format_single_match(self, match, competition_map):
         """Parse one raw match dict into {home_team, away_team, match} or None."""
         try:
             match['home_team'] = self.name_normalizer.normalize_object_name(match['home_team'])
@@ -137,8 +125,14 @@ class DataProcessor:
                 start_time=match["start_time"],
                 match_url=match["match_url"],
                 match_score=match["score"],
-                is_played=1,
+                is_played=1
             )
+
+            real_competition_name = self.competition_processor.get_only_competition_name(
+                match['competition_details']['competition_name'])
+            normalized_competition_name = self.name_normalizer.normalize_object_name(real_competition_name)
+            competition_id = competition_map[normalized_competition_name]
+            formatted_match.competition_id = competition_id
 
             return {"home_team": home_team, "away_team": away_team, "match": formatted_match}
         except Exception as e:
